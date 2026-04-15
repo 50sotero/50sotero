@@ -1,59 +1,63 @@
 # Hey, I'm Victor Sotero
 
-**Senior Data Engineer** · Gothenburg, Sweden
+> Computer scientist from Brazil, building data systems at scale in Sweden.
 
-I'm a computer scientist from Brazil who moved to Sweden to build things with data at scale. Over the past 5+ years I've designed pipelines that processed over a billion transactions, migrated terabyte-scale platforms to the cloud, and built marketing data systems from scratch for companies with hundreds of locations.
+Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped design pipelines that processed over a billion transactions, migrated terabyte-scale platforms to the cloud, and built marketing data systems from scratch for companies with hundreds of locations. I care about clean architecture, data governance, and making complex systems feel simple.
 
-I care about clean architecture, data governance, and making complex systems feel simple.
+* * *
 
----
+## 🔭 Where I've been
 
-### Where I've been
+- **Zeekr Technology Europe** — Part of the team building an EU-integrated data platform that unites scattered data sources across European operations, helping shape the approach to EU Data Act compliance and governance.
+- **JCPenney** — Played a key role in bringing the Marketing Technology data platform in-house, replacing an outsourced solution. Helped design the pipelines, migrate the data, and keep Big Data processing running smoothly across 650+ store locations on AWS.
+- **Adobe** — Contributed to the migration of terabyte-scale workloads from on-premises Cloudera/Hive to AWS EMR and S3 — work that meaningfully reduced operational costs and improved scalability.
+- **Banco Inter** — Helped migrate legacy SQL procedures to PySpark and process billions of CDC transactions via Kafka into Delta Tables for one of Brazil's largest digital banks.
 
-**Zeekr Technology Europe** — Part of the team building an EU-integrated data platform that unites scattered data sources across European operations, helping shape the approach to EU Data Act compliance and governance.
+* * *
 
-**JCPenney** — Played a key role in bringing the Marketing Technology data platform in-house, replacing an outsourced solution. Helped design the pipelines, migrate the data, and keep Big Data processing running smoothly across 650+ store locations on AWS.
+## 🛠 Tech Stack
 
-**Adobe** — Contributed to the migration of terabyte-scale workloads from on-premises Cloudera/Hive to AWS EMR and S3 — work that meaningfully reduced operational costs and improved scalability.
+**Languages**
+`Python` `SQL` `TypeScript`
 
-**Banco Inter** — Helped migrate legacy SQL procedures to PySpark and process billions of CDC transactions via Kafka into Delta Tables for one of Brazil's largest digital banks.
+**Data Processing**
+`PySpark` `Apache Spark` `Databricks` `Delta Lake` `dbt`
 
----
+**Cloud & Infrastructure**
+`AWS EMR` `S3` `Redshift` `Glue` `Terraform` `Docker` `Cloudera` `Trino`
 
-### What I work with
+**Orchestration & CI/CD**
+`Airflow` `GitLab CI/CD` `GitHub Actions` `Oozie`
 
-```
-Languages        Python · SQL · TypeScript
-Processing       PySpark · Apache Spark · Databricks · Delta Lake
-Cloud            AWS (EMR, S3, Redshift, Glue) · Terraform
-Orchestration    Airflow · GitHub Actions · Oozie
-Streaming        Kafka · Change Data Capture
-Modeling         dbt · Data Lakehouse · Data Modeling
-Infrastructure   Docker · Cloudera · Trino
-```
+**Streaming & Integration**
+`Kafka` `Change Data Capture`
 
----
+**Data Architecture**
+`Data Lakehouse` `Data Modeling` `ETL/ELT`
 
-### Projects worth mentioning
+* * *
 
-**[AI Data Augmentor](https://github.com/50sotero/ai_data_augmentor)** — A lightweight Streamlit app for enhancing small datasets through synthetic row generation via OpenAI. Upload a CSV, specify how many rows you want, and let the model fill in the gaps.
+## 📌 What I'm up to
 
-**[XML Abstract-Text Clustering](https://github.com/50sotero/xml_abstract-text_clustering)** — Text clustering experiments on academic XML abstracts using NLP techniques.
+- Building EU-compliant data platforms at **Zeekr** with Databricks, Unity Catalog, and Terraform
+- Designing governance and ingestion pipelines for cross-border data operations
+- Exploring AI-driven data augmentation and NLP side projects
+- Always looking for better ways to make data accessible and trustworthy
 
-**[Gesture Volume Control](https://github.com/50sotero/gesture_volume_control)** — Computer vision project using hand gesture recognition to control system volume in real time.
+* * *
 
----
-
-### A bit more about me
+## 📚 Background
 
 I started in academia — researching educational technologies and NLP for chatbot interactions at university in Maceió, Brazil. That research background shaped how I think about problems: methodically, with an eye for what the data is actually telling you.
 
-I hold a **Databricks Certified Data Engineer Associate** credential and have additional certifications in Machine Learning and Data Visualization from the University of Michigan.
+- **Databricks Certified** Data Engineer Associate
+- **University of Michigan** — Machine Learning & Data Visualization certifications
+- **CSEDU International Conference** — Published research on educational technologies in medical education
 
-I also published a paper at the **CSEDU International Conference** on the use of educational technologies in medical education.
+* * *
 
----
+## 📫 Let's connect
 
-### Let's connect
-
-[LinkedIn](https://linkedin.com/in/victor-sotero) · [CV & Portfolio](https://main.d303nf19xanwnb.amplifyapp.com/) · [Email](mailto:victorvcdb@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-victor--sotero-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://linkedin.com/in/victor-sotero)
+[![Portfolio](https://img.shields.io/badge/CV%20%26%20Portfolio-amplifyapp-FF9900?style=flat&logo=aws-amplify&logoColor=white)](https://main.d303nf19xanwnb.amplifyapp.com/)
+[![Email](https://img.shields.io/badge/Email-victorvcdb@gmail.com-EA4335?style=flat&logo=gmail&logoColor=white)](mailto:victorvcdb@gmail.com)
