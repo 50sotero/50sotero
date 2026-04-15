@@ -10,13 +10,13 @@ I care about clean architecture, data governance, and making complex systems fee
 
 ### Where I've been
 
-**Zeekr Technology Europe** — Building an EU-integrated data platform that unites scattered data sources across European operations, with a focus on EU Data Act compliance and governance.
+**Zeekr Technology Europe** — Part of the team building an EU-integrated data platform that unites scattered data sources across European operations, helping shape the approach to EU Data Act compliance and governance.
 
-**JCPenney** — Built the entire Marketing Technology data platform in-house, replacing an outsourced solution. Designed the pipelines, migrated the data, and maintained Big Data processing across 650+ store locations on AWS.
+**JCPenney** — Played a key role in bringing the Marketing Technology data platform in-house, replacing an outsourced solution. Helped design the pipelines, migrate the data, and keep Big Data processing running smoothly across 650+ store locations on AWS.
 
-**Adobe** — Engineered the migration of terabyte-scale workloads from on-premises Cloudera/Hive to AWS EMR and S3, reducing operational costs while improving scalability.
+**Adobe** — Contributed to the migration of terabyte-scale workloads from on-premises Cloudera/Hive to AWS EMR and S3 — work that meaningfully reduced operational costs and improved scalability.
 
-**Banco Inter** — Migrated legacy SQL procedures to PySpark, processed billions of CDC transactions via Kafka into Delta Tables for one of Brazil's largest digital banks.
+**Banco Inter** — Helped migrate legacy SQL procedures to PySpark and process billions of CDC transactions via Kafka into Delta Tables for one of Brazil's largest digital banks.
 
 ---
 
