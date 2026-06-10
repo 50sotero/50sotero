@@ -37,6 +37,12 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 * * *
 
+## 📊 Code Metrics
+
+GitHub API snapshot: **25 public original repositories**, **2 stars**, and top languages by repository bytes: `Jupyter Notebook` `HTML` `Python` `PowerShell` `TypeScript`.
+
+[![Victor's GitHub stats](https://github-readme-stats.vercel.app/api?username=50sotero&show_icons=true&theme=transparent&hide_border=true&rank_icon=github)](https://github.com/50sotero)
+[![Top languages](https://github-readme-stats.vercel.app/api/top-langs/?username=50sotero&layout=compact&theme=transparent&hide_border=true&langs_count=8)](https://github.com/50sotero?tab=repositories)
 ## 📌 What I'm up to
 
 - Building EU-compliant data platforms at **Zeekr** with Databricks, Unity Catalog, and Terraform
