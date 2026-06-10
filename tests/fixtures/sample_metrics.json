@@ -1,0 +1,30 @@
+{
+  "repositories": [
+    { "name": "demo-public", "private": false, "default_branch": "main" },
+    { "name": "demo-private", "private": true, "default_branch": "main" }
+  ],
+  "commits": [
+    {
+      "repo": "demo-public",
+      "private": false,
+      "sha": "a",
+      "date": "2026-06-01T10:00:00Z",
+      "additions": 120,
+      "deletions": 20,
+      "files": 3
+    },
+    {
+      "repo": "demo-private",
+      "private": true,
+      "sha": "b",
+      "date": "2026-06-10T12:00:00Z",
+      "additions": 80,
+      "deletions": 10,
+      "files": 2
+    }
+  ],
+  "languages": [
+    { "language": "Python", "loc": 90, "files": 2 },
+    { "language": "TypeScript", "loc": 30, "files": 1 }
+  ]
+}

@@ -41,6 +41,8 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 ![Code velocity chart showing 1407 commits, 4.07 commits per day, 5.2k lines changed per day, monthly trend lines, and source LOC language percentages led by TypeScript 49%](assets/code-metrics.svg)
 
+<sub>Generated with the reusable [code metrics SVG generator](docs/code-metrics.md).</sub>
+
 ## 📌 What I'm up to
 
 - Building EU-compliant data platforms at **Zeekr** with Databricks, Unity Catalog, and Terraform

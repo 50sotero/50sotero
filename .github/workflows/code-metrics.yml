@@ -1,0 +1,43 @@
+name: Code metrics
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out profile repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Generate metrics card
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          METRICS_TOKEN: ${{ secrets.METRICS_TOKEN }}
+        run: |
+          python scripts/generate_code_metrics.py \
+            --user "${{ github.repository_owner }}" \
+            --output assets/code-metrics.svg
+
+      - name: Commit updated card
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/code-metrics.svg
+          if git diff --cached --quiet; then
+            echo "No metrics changes to commit."
+          else
+            git commit -m "Update code metrics SVG"
+            git push
+          fi
