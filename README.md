@@ -39,10 +39,25 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 ## 📊 Code Metrics
 
-Authenticated GitHub API snapshot (private repositories included): **39 original repositories** (**25 public**, **14 private**), **2 stars**, and top languages by repository bytes: `Jupyter Notebook` `TypeScript` `HTML` `Python` `JavaScript`.
+Authenticated GitHub API snapshot (private repositories included; private repo names not listed).
 
-[![Victor's GitHub stats](https://github-readme-stats.vercel.app/api?username=50sotero&show_icons=true&theme=transparent&hide_border=true&rank_icon=github&include_all_commits=true)](https://github.com/50sotero)
-[![Top languages](https://github-readme-stats.vercel.app/api/top-langs/?username=50sotero&layout=compact&theme=transparent&hide_border=true&langs_count=8)](https://github.com/50sotero?tab=repositories)
+| Metric | Value |
+| --- | ---: |
+| Original repositories | 39 |
+| Public / private | 25 / 14 |
+| Stars | 2 |
+| Top languages | Jupyter Notebook 31.5%, TypeScript 27.1%, HTML 20.5%, Python 15.2%, JavaScript 2%, CSS 1.2%, Shell 0.9%, HCL 0.7% |
+
+| Language | Share of repository bytes |
+| --- | ---: |
+| Jupyter Notebook | 31.5% |
+| TypeScript | 27.1% |
+| HTML | 20.5% |
+| Python | 15.2% |
+| JavaScript | 2% |
+| CSS | 1.2% |
+| Shell | 0.9% |
+| HCL | 0.7% |
 ## 📌 What I'm up to
 
 - Building EU-compliant data platforms at **Zeekr** with Databricks, Unity Catalog, and Terraform
