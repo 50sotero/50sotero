@@ -39,7 +39,7 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 ## 📊 Code Metrics
 
-![Code velocity chart showing 1407 commits, 4.07 commits per day, 5.2k lines changed per day, monthly trend lines, and private-inclusive language mix](assets/code-metrics.svg)
+![Code velocity chart showing 1407 commits, 4.07 commits per day, 5.2k lines changed per day, monthly trend lines, and source LOC language percentages led by TypeScript 49%](assets/code-metrics.svg)
 
 ## 📌 What I'm up to
 

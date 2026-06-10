@@ -1,6 +1,6 @@
 <svg width="920" height="640" viewBox="0 0 920 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for Victor Sotero</title>
-  <desc id="desc">1407 authored commits, 1.8M lines changed, 4.07 commits per day, and 5.2k lines changed per day from Jul 2025-Jun 2026.</desc>
+  <desc id="desc">1407 authored commits, 1.8M lines changed, 4.07 commits per day, 5.2k lines changed per day, and language percentages by source lines of code.</desc>
   <defs>
     <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#08111f"/>
@@ -34,7 +34,7 @@
   <rect x="16" y="16" width="888" height="608" rx="22" fill="url(#card)" stroke="#303c4d" filter="url(#shadow)"/>
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
-  <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Jul 2025-Jun 2026 - private repo names omitted</text>
+  <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Jul 2025-Jun 2026 - language mix by source LOC</text>
   <text x="852" y="80" class="note" text-anchor="end">Updated Jun 10, 2026</text>
 
   <g>
@@ -56,7 +56,7 @@
 
   <g>
     <text x="54" y="232" class="muted">Repos: 39 original (25 public / 14 private)</text>
-    <text x="314" y="232" class="muted">Changed: 1.8M</text>
+    <text x="314" y="232" class="muted">Source LOC: 429.2k</text>
     <text x="484" y="232" class="muted">Added: +1.46M</text>
     <text x="640" y="232" class="muted">Deleted: -336k</text>
     <text x="790" y="232" class="muted">Net: +1.13M</text>
@@ -96,19 +96,19 @@
       <text x='846' y='410' class='axis' text-anchor='middle'>Jun</text>
   </g>
 
-  <text x="54" y="472" class="label">LANGUAGE MIX</text>
+  <text x="54" y="472" class="label">SOURCE LOC MIX</text>
   <text x="866" y="472" class="muted" text-anchor="end">Best months: 2026-04 commits, 2026-03 line changes</text>
-  <g clip-path="url(#langClip)"><rect x="54" y="504" width="812" height="14" fill="#212b3a"/><rect x='54' y='504' width='256' height='14' fill='#da5b0b'/>
-    <rect x='310' y='504' width='220' height='14' fill='#3178c6'/>
-    <rect x='530' y='504' width='166' height='14' fill='#e34c26'/>
-    <rect x='696' y='504' width='123' height='14' fill='#3572a5'/>
-    <rect x='819' y='504' width='16' height='14' fill='#f1e05a'/>
-    <rect x='835' y='504' width='31' height='14' fill='#663399'/></g>
+  <g clip-path="url(#langClip)"><rect x="54" y="504" width="812" height="14" fill="#212b3a"/><rect x='54' y='504' width='398' height='14' fill='#3178c6'/>
+    <rect x='452' y='504' width='235' height='14' fill='#3572a5'/>
+    <rect x='687' y='504' width='75' height='14' fill='#e34c26'/>
+    <rect x='762' y='504' width='34' height='14' fill='#f1e05a'/>
+    <rect x='796' y='504' width='26' height='14' fill='#663399'/>
+    <rect x='822' y='504' width='44' height='14' fill='#94a3b8'/></g>
   <rect x="54" y="504" width="812" height="14" rx="7" stroke="#303c4d"/>
-  <circle cx='62' cy='543' r='5.5' fill='#da5b0b'/><text x='76' y='548' class='legend'>Jupyter Notebook</text><text x='252' y='548' class='legendPct'>31.5%</text>
-    <circle cx='332' cy='543' r='5.5' fill='#3178c6'/><text x='346' y='548' class='legend'>TypeScript</text><text x='522' y='548' class='legendPct'>27.1%</text>
-    <circle cx='602' cy='543' r='5.5' fill='#e34c26'/><text x='616' y='548' class='legend'>HTML</text><text x='792' y='548' class='legendPct'>20.5%</text>
-    <circle cx='62' cy='567' r='5.5' fill='#3572a5'/><text x='76' y='572' class='legend'>Python</text><text x='252' y='572' class='legendPct'>15.2%</text>
-    <circle cx='332' cy='567' r='5.5' fill='#f1e05a'/><text x='346' y='572' class='legend'>JavaScript</text><text x='522' y='572' class='legendPct'>2%</text>
-    <circle cx='602' cy='567' r='5.5' fill='#663399'/><text x='616' y='572' class='legend'>CSS</text><text x='792' y='572' class='legendPct'>1.2%</text>
+  <circle cx='62' cy='543' r='5.5' fill='#3178c6'/><text x='76' y='548' class='legend'>TypeScript</text><text x='252' y='548' class='legendPct'>49%</text>
+    <circle cx='332' cy='543' r='5.5' fill='#3572a5'/><text x='346' y='548' class='legend'>Python</text><text x='522' y='548' class='legendPct'>28.9%</text>
+    <circle cx='602' cy='543' r='5.5' fill='#e34c26'/><text x='616' y='548' class='legend'>HTML</text><text x='792' y='548' class='legendPct'>9.2%</text>
+    <circle cx='62' cy='567' r='5.5' fill='#f1e05a'/><text x='76' y='572' class='legend'>JavaScript</text><text x='252' y='572' class='legendPct'>4.2%</text>
+    <circle cx='332' cy='567' r='5.5' fill='#663399'/><text x='346' y='572' class='legend'>CSS</text><text x='522' y='572' class='legendPct'>3.2%</text>
+    <circle cx='602' cy='567' r='5.5' fill='#94a3b8'/><text x='616' y='572' class='legend'>Other</text><text x='792' y='572' class='legendPct'>5.5%</text>
 </svg>
