@@ -1,0 +1,80 @@
+<svg width="860" height="360" viewBox="0 0 860 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Private-inclusive GitHub code metrics for Victor Sotero</title>
+  <desc id="desc">39 original repositories, 25 public and 14 private, 2 stars, with top languages led by .</desc>
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="860" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="0.52" stop-color="#111827"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="40" y1="28" x2="820" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/>
+      <stop offset="0.48" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="barClip"><rect x="54" y="225" width="752" height="16" rx="8"/></clipPath>
+    <style>
+      .title { font: 700 25px Segoe UI, Inter, Arial, sans-serif; fill: #f0f6fc; }
+      .sub { font: 500 13px Segoe UI, Inter, Arial, sans-serif; fill: #8b949e; }
+      .stat { font: 800 30px Segoe UI, Inter, Arial, sans-serif; fill: #f0f6fc; }
+      .label { font: 600 12px Segoe UI, Inter, Arial, sans-serif; fill: #8b949e; letter-spacing: .04em; }
+      .legend { font: 600 13px Segoe UI, Inter, Arial, sans-serif; fill: #c9d1d9; }
+      .legendPct { font: 700 13px Segoe UI, Inter, Arial, sans-serif; fill: #f0f6fc; text-anchor: end; }
+      .small { font: 600 12px Segoe UI, Inter, Arial, sans-serif; fill: #7dd3fc; }
+    </style>
+  </defs>
+
+  <rect x="16" y="16" width="828" height="328" rx="18" fill="url(#card)" stroke="#30363d" filter="url(#shadow)"/>
+  <rect x="38" y="38" width="784" height="4" rx="2" fill="url(#accent)"/>
+
+  <text x="54" y="78" class="title">Code metrics</text>
+  <text x="54" y="101" class="sub">Private-inclusive GitHub API snapshot - private repository names omitted</text>
+  <text x="806" y="77" class="small" text-anchor="end">Updated Jun 10, 2026</text>
+
+  <g>
+    <rect x="54" y="126" width="174" height="72" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="74" y="158" class="stat">39</text>
+    <text x="74" y="181" class="label">ORIGINAL REPOS</text>
+  </g>
+  <g>
+    <rect x="244" y="126" width="174" height="72" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="264" y="158" class="stat">25</text>
+    <text x="264" y="181" class="label">PUBLIC</text>
+  </g>
+  <g>
+    <rect x="434" y="126" width="174" height="72" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="454" y="158" class="stat">14</text>
+    <text x="454" y="181" class="label">PRIVATE</text>
+  </g>
+  <g>
+    <rect x="624" y="126" width="182" height="72" rx="12" fill="#161b22" stroke="#30363d"/>
+    <text x="644" y="158" class="stat">2</text>
+    <text x="644" y="181" class="label">STARS</text>
+  </g>
+
+  <text x="54" y="214" class="label">LANGUAGE MIX</text>
+  <g clip-path="url(#barClip)">
+    <rect x="54" y="225" width="752" height="16" fill="#21262d"/>
+    <rect x='54' y='225' width='237' height='16' fill='#da5b0b'/>
+    <rect x='291' y='225' width='204' height='16' fill='#3178c6'/>
+    <rect x='495' y='225' width='154' height='16' fill='#e34c26'/>
+    <rect x='649' y='225' width='114' height='16' fill='#3572a5'/>
+    <rect x='763' y='225' width='15' height='16' fill='#f1e05a'/>
+    <rect x='778' y='225' width='9' height='16' fill='#663399'/>
+    <rect x='787' y='225' width='7' height='16' fill='#89e051'/>
+    <rect x='794' y='225' width='12' height='16' fill='#844fba'/>
+  </g>
+  <rect x="54" y="225" width="752" height="16" rx="8" stroke="#30363d"/>
+
+  <circle cx='62' cy='265' r='6' fill='#da5b0b'/><text x='78' y='270' class='legend'>Jupyter Notebook</text><text x='272' y='270' class='legendPct'>31.5%</text>
+    <circle cx='427' cy='265' r='6' fill='#3178c6'/><text x='443' y='270' class='legend'>TypeScript</text><text x='637' y='270' class='legendPct'>27.1%</text>
+    <circle cx='62' cy='289' r='6' fill='#e34c26'/><text x='78' y='294' class='legend'>HTML</text><text x='272' y='294' class='legendPct'>20.5%</text>
+    <circle cx='427' cy='289' r='6' fill='#3572a5'/><text x='443' y='294' class='legend'>Python</text><text x='637' y='294' class='legendPct'>15.2%</text>
+    <circle cx='62' cy='313' r='6' fill='#f1e05a'/><text x='78' y='318' class='legend'>JavaScript</text><text x='272' y='318' class='legendPct'>2.0%</text>
+    <circle cx='427' cy='313' r='6' fill='#663399'/><text x='443' y='318' class='legend'>CSS</text><text x='637' y='318' class='legendPct'>1.2%</text>
+    <circle cx='62' cy='337' r='6' fill='#89e051'/><text x='78' y='342' class='legend'>Shell</text><text x='272' y='342' class='legendPct'>0.9%</text>
+    <circle cx='427' cy='337' r='6' fill='#844fba'/><text x='443' y='342' class='legend'>HCL</text><text x='637' y='342' class='legendPct'>0.7%</text>
+</svg>

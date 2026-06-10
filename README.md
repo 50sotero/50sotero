@@ -39,25 +39,8 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 ## 📊 Code Metrics
 
-Authenticated GitHub API snapshot (private repositories included; private repo names not listed).
+![Private-inclusive GitHub code metrics: 39 original repositories, 25 public, 14 private, 2 stars, top languages Jupyter Notebook, TypeScript, HTML, Python, JavaScript](assets/code-metrics.svg)
 
-| Metric | Value |
-| --- | ---: |
-| Original repositories | 39 |
-| Public / private | 25 / 14 |
-| Stars | 2 |
-| Top languages | Jupyter Notebook 31.5%, TypeScript 27.1%, HTML 20.5%, Python 15.2%, JavaScript 2%, CSS 1.2%, Shell 0.9%, HCL 0.7% |
-
-| Language | Share of repository bytes |
-| --- | ---: |
-| Jupyter Notebook | 31.5% |
-| TypeScript | 27.1% |
-| HTML | 20.5% |
-| Python | 15.2% |
-| JavaScript | 2% |
-| CSS | 1.2% |
-| Shell | 0.9% |
-| HCL | 0.7% |
 ## 📌 What I'm up to
 
 - Building EU-compliant data platforms at **Zeekr** with Databricks, Unity Catalog, and Terraform
