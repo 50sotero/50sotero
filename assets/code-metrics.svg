@@ -1,4 +1,4 @@
-<svg width="860" height="360" viewBox="0 0 860 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<svg width="860" height="380" viewBox="0 0 860 380" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code metrics for Victor Sotero</title>
   <desc id="desc">39 original repositories, 25 public and 14 private, 2 stars, with top languages led by Jupyter Notebook.</desc>
   <defs>
@@ -27,7 +27,7 @@
     </style>
   </defs>
 
-  <rect x="16" y="16" width="828" height="328" rx="18" fill="url(#card)" stroke="#30363d" filter="url(#shadow)"/>
+  <rect x="16" y="16" width="828" height="348" rx="18" fill="url(#card)" stroke="#30363d" filter="url(#shadow)"/>
   <rect x="38" y="38" width="784" height="4" rx="2" fill="url(#accent)"/>
 
   <text x="54" y="78" class="title">Code metrics</text>
