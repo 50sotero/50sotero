@@ -39,7 +39,7 @@ Senior Data Engineer based in Gothenburg. Over the past 5+ years I've helped des
 
 ## 📊 Code Metrics
 
-![Private-inclusive GitHub code metrics: 39 original repositories, 25 public, 14 private, 2 stars, top languages Jupyter Notebook, TypeScript, HTML, Python, JavaScript](assets/code-metrics.svg)
+![Code velocity chart showing 1407 commits, 4.07 commits per day, 5.2k lines changed per day, monthly trend lines, and private-inclusive language mix](assets/code-metrics.svg)
 
 ## 📌 What I'm up to
 
