@@ -11,6 +11,21 @@ import generate_code_metrics as metrics
 
 
 class GenerateCodeMetricsTests(unittest.TestCase):
+    def test_parse_next_link(self):
+        header = '<https://api.github.com/user/repos?page=3&per_page=100>; rel="next", <https://api.github.com/user/repos?page=50&per_page=100>; rel="last"'
+        self.assertEqual(
+            metrics.parse_next_link(header),
+            "https://api.github.com/user/repos?page=3&per_page=100",
+        )
+
+        header_no_next = '<https://api.github.com/user/repos?page=50&per_page=100>; rel="last"'
+        self.assertIsNone(metrics.parse_next_link(header_no_next))
+
+        self.assertIsNone(metrics.parse_next_link(""))
+
+        header_malformed = 'https://api.github.com/user/repos?page=3&per_page=100; rel="next"'
+        self.assertIsNone(metrics.parse_next_link(header_malformed))
+
     def test_format_compact(self):
         self.assertEqual(metrics.format_compact(999), "999")
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
