@@ -500,20 +500,29 @@ def count_source_loc(paths: Iterable[Path]) -> LocMetrics:
         if not root.exists():
             continue
         repos_scanned += 1
-        for path in root.rglob("*"):
-            if not path.is_file() or should_skip(path):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+
+            p_dir = Path(dirpath)
+            if should_skip(p_dir):
+                dirnames[:] = []
                 continue
-            lang = language_for(path)
-            if not lang:
-                continue
-            if lang == "Jupyter Notebook":
-                loc = count_notebook_lines(path)
-            else:
-                loc = count_text_lines(path.read_text(encoding="utf-8", errors="ignore"), lang)
-            if loc <= 0:
-                continue
-            totals[lang] = totals.get(lang, 0) + loc
-            files[lang] = files.get(lang, 0) + 1
+
+            for filename in filenames:
+                path = p_dir / filename
+                if not path.is_file() or should_skip(path):
+                    continue
+                lang = language_for(path)
+                if not lang:
+                    continue
+                if lang == "Jupyter Notebook":
+                    loc = count_notebook_lines(path)
+                else:
+                    loc = count_text_lines(path.read_text(encoding="utf-8", errors="ignore"), lang)
+                if loc <= 0:
+                    continue
+                totals[lang] = totals.get(lang, 0) + loc
+                files[lang] = files.get(lang, 0) + 1
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
