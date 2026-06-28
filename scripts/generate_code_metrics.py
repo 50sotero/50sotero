@@ -601,7 +601,7 @@ def build_card(
     total_additions = sum(commit.additions for commit in commit_stats)
     total_deletions = sum(commit.deletions for commit in commit_stats)
     total_changed = total_additions + total_deletions
-    active_days = len({commit.date.date().isoformat() for commit in commit_stats})
+    active_days = len({commit.date.date() for commit in commit_stats})
     return MetricsCard(
         owner=owner,
         period_label=f"{start.strftime('%b %Y')}-{today.strftime('%b %Y')}",
