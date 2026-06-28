@@ -46,6 +46,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
 
             self.assertEqual(metrics.count_notebook_lines(path), 2)
 
+    def test_first_day_months_ago(self):
+        # 1 month (current month)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 1), date(2026, 6, 1))
+        # Within the same year
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 6), date(2026, 1, 1))
+        # Year crossover
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 7), date(2025, 12, 1))
+        # Exactly 12 months (one year crossover)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 12), date(2025, 7, 1))
+        # 13 months (exactly 1 year back, first day of current month)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 13), date(2025, 6, 1))
+        # Multi-year crossover
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 25), date(2024, 6, 1))
+
     def test_monthly_series_uses_partial_current_month(self):
         commits = [
             metrics.CommitStat(
