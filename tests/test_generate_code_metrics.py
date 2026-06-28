@@ -16,6 +16,19 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
         self.assertEqual(metrics.format_compact(1_799_327), "1.8M")
 
+    def test_safe_redirect_handler_strips_auth(self):
+        import urllib.request
+        req = urllib.request.Request("http://example.com", headers={"Authorization": "Bearer secret"})
+        handler = metrics.SafeRedirectHandler()
+
+        # Cross-origin redirect
+        new_req_cross = handler.redirect_request(req, None, 302, "Found", {}, "http://otherdomain.com")
+        self.assertFalse(new_req_cross.has_header("Authorization"))
+
+        # Same-origin redirect
+        new_req_same = handler.redirect_request(req, None, 302, "Found", {}, "http://example.com/otherpath")
+        self.assertTrue(new_req_same.has_header("Authorization"))
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
