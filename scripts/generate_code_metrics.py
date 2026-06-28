@@ -160,10 +160,6 @@ class CommitStat:
     deletions: int
     files: int
 
-    @property
-    def total(self) -> int:
-        return self.additions + self.deletions
-
 
 @dataclass(frozen=True)
 class MonthMetric:
