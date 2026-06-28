@@ -222,6 +222,19 @@ class MetricsCard:
     languages: list[LanguageMetric]
 
 
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(
+        self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> urllib.request.Request | None:
+        new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new_req is not None:
+            old_host = urllib.parse.urlparse(req.full_url).hostname
+            new_host = urllib.parse.urlparse(newurl).hostname
+            if old_host != new_host and new_req.has_header("Authorization"):
+                new_req.remove_header("Authorization")
+        return new_req
+
+
 class GitHubClient:
     def __init__(self, token: str, api_url: str = GITHUB_API) -> None:
         if not token:
@@ -233,6 +246,7 @@ class GitHubClient:
             "User-Agent": "code-metrics-svg-generator",
             "X-GitHub-Api-Version": "2022-11-28",
         }
+        self.opener = urllib.request.build_opener(SafeRedirectHandler())
 
     def request_json(self, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
         data = None if body is None else json.dumps(body).encode("utf-8")
@@ -242,19 +256,19 @@ class GitHubClient:
             headers=self.headers,
             method=method,
         )
-        with urllib.request.urlopen(req, timeout=60) as response:
+        with self.opener.open(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
 
     def request_bytes(self, path: str) -> bytes:
         req = urllib.request.Request(self._url(path), headers=self.headers)
-        with urllib.request.urlopen(req, timeout=120) as response:
+        with self.opener.open(req, timeout=120) as response:
             return response.read()
 
     def paginated_json(self, path: str) -> Iterable[Any]:
         url = self._url(path)
         while url:
             req = urllib.request.Request(url, headers=self.headers)
-            with urllib.request.urlopen(req, timeout=60) as response:
+            with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
                 url = parse_next_link(response.headers.get("Link", ""))
