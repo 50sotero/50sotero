@@ -46,6 +46,38 @@ class GenerateCodeMetricsTests(unittest.TestCase):
 
             self.assertEqual(metrics.count_notebook_lines(path), 2)
 
+    def test_grouped_languages(self):
+        loc = metrics.LocMetrics(
+            repos_scanned=1,
+            total_loc=1000,
+            languages=[
+                metrics.LanguageMetric("Python", 500, 50.0, 5),
+                metrics.LanguageMetric("TypeScript", 200, 20.0, 2),
+                metrics.LanguageMetric("JavaScript", 100, 10.0, 1),
+                metrics.LanguageMetric("HTML", 100, 10.0, 1),
+                metrics.LanguageMetric("CSS", 50, 5.0, 1),
+                metrics.LanguageMetric("Shell", 50, 5.0, 1),
+            ],
+        )
+
+        # Test no grouping needed (count > len(languages))
+        grouped_no_other = metrics.grouped_languages(loc, count=10)
+        self.assertEqual(len(grouped_no_other), 6)
+        self.assertNotIn("Other", [lang.name for lang in grouped_no_other])
+
+        # Test grouping needed (count < len(languages))
+        grouped_with_other = metrics.grouped_languages(loc, count=3)
+        self.assertEqual(len(grouped_with_other), 4)
+        self.assertEqual(grouped_with_other[0].name, "Python")
+        self.assertEqual(grouped_with_other[1].name, "TypeScript")
+        self.assertEqual(grouped_with_other[2].name, "JavaScript")
+
+        other = grouped_with_other[3]
+        self.assertEqual(other.name, "Other")
+        self.assertEqual(other.loc, 200)
+        self.assertEqual(other.percent, 20.0)
+        self.assertEqual(other.files, 3)
+
     def test_monthly_series_uses_partial_current_month(self):
         commits = [
             metrics.CommitStat(
