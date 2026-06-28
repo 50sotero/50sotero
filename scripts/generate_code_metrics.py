@@ -313,14 +313,17 @@ def days_in_period_month(month_start: date, start: date, end: date) -> int:
 
 
 def build_monthly_series(commits: list[CommitStat], start: date, end: date) -> list[MonthMetric]:
+    from collections import defaultdict
+    commits_by_month = defaultdict(list)
+    for commit in commits:
+        d = commit.date.date()
+        commits_by_month[(d.year, d.month)].append(commit)
+
     metrics = []
     for month_start in month_starts(start, end):
-        month_end = add_month(month_start)
-        month_commits = [
-            commit
-            for commit in commits
-            if month_start <= commit.date.date() < month_end
-        ]
+        key = (month_start.year, month_start.month)
+        month_commits = commits_by_month.get(key, [])
+
         metrics.append(
             MonthMetric(
                 label=month_start.strftime("%b"),
