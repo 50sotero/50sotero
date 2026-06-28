@@ -28,6 +28,7 @@ from xml.sax.saxutils import escape
 GITHUB_API = "https://api.github.com"
 CARD_WIDTH = 920
 CARD_HEIGHT = 640
+MAX_FILE_SIZE = 1048576  # 1MB
 
 SKIP_DIRS = {
     ".git",
@@ -540,7 +541,18 @@ def count_source_loc_from_archives(
                 lang = language_for(relative)
                 if not lang:
                     continue
-                raw = zip_file.read(member)
+
+                if member.file_size > MAX_FILE_SIZE:
+                    continue
+
+                try:
+                    with zip_file.open(member) as f:
+                        raw = f.read(MAX_FILE_SIZE + 1)
+                        if len(raw) > MAX_FILE_SIZE:
+                            continue
+                except zipfile.BadZipFile:
+                    continue
+
                 if lang == "Jupyter Notebook":
                     try:
                         data = json.loads(raw.decode("utf-8", errors="ignore"))
