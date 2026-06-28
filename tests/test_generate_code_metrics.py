@@ -46,6 +46,41 @@ class GenerateCodeMetricsTests(unittest.TestCase):
 
             self.assertEqual(metrics.count_notebook_lines(path), 2)
 
+    def test_grouped_languages_fewer_than_count(self):
+        loc = metrics.LocMetrics(
+            repos_scanned=1,
+            total_loc=100,
+            languages=[
+                metrics.LanguageMetric(name="Python", loc=60, percent=60.0, files=2),
+                metrics.LanguageMetric(name="TypeScript", loc=40, percent=40.0, files=1),
+            ],
+        )
+        grouped = metrics.grouped_languages(loc, count=3)
+        self.assertEqual(len(grouped), 2)
+        self.assertEqual(grouped[0].name, "Python")
+        self.assertEqual(grouped[1].name, "TypeScript")
+
+    def test_grouped_languages_more_than_count(self):
+        loc = metrics.LocMetrics(
+            repos_scanned=1,
+            total_loc=100,
+            languages=[
+                metrics.LanguageMetric(name="Python", loc=50, percent=50.0, files=2),
+                metrics.LanguageMetric(name="TypeScript", loc=30, percent=30.0, files=1),
+                metrics.LanguageMetric(name="Go", loc=10, percent=10.0, files=1),
+                metrics.LanguageMetric(name="Rust", loc=5, percent=5.0, files=1),
+                metrics.LanguageMetric(name="Java", loc=5, percent=5.0, files=1),
+            ],
+        )
+        grouped = metrics.grouped_languages(loc, count=2)
+        self.assertEqual(len(grouped), 3)
+        self.assertEqual(grouped[0].name, "Python")
+        self.assertEqual(grouped[1].name, "TypeScript")
+        self.assertEqual(grouped[2].name, "Other")
+        self.assertEqual(grouped[2].loc, 20)
+        self.assertEqual(grouped[2].percent, 20.0)
+        self.assertEqual(grouped[2].files, 3)
+
     def test_monthly_series_uses_partial_current_month(self):
         commits = [
             metrics.CommitStat(
