@@ -16,6 +16,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
         self.assertEqual(metrics.format_compact(1_799_327), "1.8M")
 
+    def test_first_day_months_ago(self):
+        # 1 month ago from March is February
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 2), date(2024, 2, 1))
+        # 1 month ago from Jan is Dec of previous year (crossing year boundary)
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 1, 10), 2), date(2023, 12, 1))
+        # 12 months ago
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 13), date(2023, 3, 1))
+        # 24 months ago
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 25), date(2022, 3, 1))
+        # 0 months ago (current month)
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 1), date(2024, 3, 1))
+        # A few months into the previous year
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 6), date(2023, 10, 1))
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
