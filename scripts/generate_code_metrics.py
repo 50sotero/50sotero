@@ -637,6 +637,63 @@ def line_path(values: list[float], x: float, y: float, width: float, height: flo
     return line, area, max_value
 
 
+def render_changed_chart(latest: MonthMetric, changed_area: str, changed_line: str, changed_max: float, changed_ticks: str) -> str:
+    return f"""<g>
+    <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
+    <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
+    <text x="846" y="282" class="note" text-anchor="end">now {format_compact(latest.lines_per_day)}</text>
+    {chart_grid(506, 846)}
+    <path d="{changed_area}" fill="url(#lineFill)"/>
+    <path d="{changed_line}" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak {format_compact(changed_max)}</text>
+    {changed_ticks}
+  </g>"""
+
+
+def render_commit_chart(latest: MonthMetric, commit_area: str, commit_line: str, commit_max: float, commit_ticks: str) -> str:
+    return f"""<g>
+    <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
+    <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
+    <text x="414" y="282" class="note" text-anchor="end">now {latest.commits_per_day:g}</text>
+    {chart_grid(74, 414)}
+    <path d="{commit_area}" fill="url(#commitFill)"/>
+    <path d="{commit_line}" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak {commit_max:g}</text>
+    {commit_ticks}
+  </g>"""
+
+
+def render_svg_defs() -> str:
+    return """<defs>
+    <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="44" y1="40" x2="876" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset="0.5" stop-color="#58a6ff"/><stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="commitFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#58a6ff" stop-opacity="0.38"/><stop offset="1" stop-color="#58a6ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="lineFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f97316" stop-opacity="0.42"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#020617" flood-opacity="0.48"/></filter>
+    <clipPath id="langClip"><rect x="54" y="504" width="812" height="14" rx="7"/></clipPath>
+    <style>
+      .title { font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }
+      .sub { font: 500 13px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; }
+      .stat { font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }
+      .label { font: 700 11px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; letter-spacing: .04em; }
+      .panelTitle { font: 800 15px Segoe UI, Inter, Arial, sans-serif; fill: #e5edf7; }
+      .axis { font: 600 10px Segoe UI, Inter, Arial, sans-serif; fill: #64748b; }
+      .legend { font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #d6e2ef; }
+      .legendPct { font: 800 12px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; text-anchor: end; }
+      .note { font: 700 12px Segoe UI, Inter, Arial, sans-serif; fill: #7dd3fc; }
+      .muted { font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #94a3b8; }
+    </style>
+  </defs>"""
+
+
 def render_svg(card: MetricsCard) -> str:
     commit_values = [month.commits_per_day for month in card.monthly]
     line_values = [month.lines_per_day for month in card.monthly]
@@ -658,34 +715,7 @@ def render_svg(card: MetricsCard) -> str:
     return f"""<svg width="{CARD_WIDTH}" height="{CARD_HEIGHT}" viewBox="0 0 {CARD_WIDTH} {CARD_HEIGHT}" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for {escape(card.owner)}</title>
   <desc id="desc">{card.total_commits} authored commits, {format_compact(card.total_changed)} lines changed, {card.avg_commits_per_day} commits per day, {format_compact(card.avg_lines_per_day)} lines changed per day, and language percentages by source lines of code.</desc>
-  <defs>
-    <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="44" y1="40" x2="876" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2dd4bf"/><stop offset="0.5" stop-color="#58a6ff"/><stop offset="1" stop-color="#f97316"/>
-    </linearGradient>
-    <linearGradient id="commitFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#58a6ff" stop-opacity="0.38"/><stop offset="1" stop-color="#58a6ff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="lineFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f97316" stop-opacity="0.42"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#020617" flood-opacity="0.48"/></filter>
-    <clipPath id="langClip"><rect x="54" y="504" width="812" height="14" rx="7"/></clipPath>
-    <style>
-      .title {{ font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }}
-      .sub {{ font: 500 13px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; }}
-      .stat {{ font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }}
-      .label {{ font: 700 11px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; letter-spacing: .04em; }}
-      .panelTitle {{ font: 800 15px Segoe UI, Inter, Arial, sans-serif; fill: #e5edf7; }}
-      .axis {{ font: 600 10px Segoe UI, Inter, Arial, sans-serif; fill: #64748b; }}
-      .legend {{ font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #d6e2ef; }}
-      .legendPct {{ font: 800 12px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; text-anchor: end; }}
-      .note {{ font: 700 12px Segoe UI, Inter, Arial, sans-serif; fill: #7dd3fc; }}
-      .muted {{ font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #94a3b8; }}
-    </style>
-  </defs>
+  {render_svg_defs()}
   <rect x="16" y="16" width="888" height="608" rx="22" fill="url(#card)" stroke="#303c4d" filter="url(#shadow)"/>
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
@@ -703,27 +733,9 @@ def render_svg(card: MetricsCard) -> str:
   <text x="640" y="232" class="muted">Deleted: -{format_compact(card.total_deletions)}</text>
   <text x="790" y="232" class="muted">Net: {net_sign}{format_compact(abs(net_lines))}</text>
 
-  <g>
-    <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
-    <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
-    <text x="414" y="282" class="note" text-anchor="end">now {latest.commits_per_day:g}</text>
-    {chart_grid(74, 414)}
-    <path d="{commit_area}" fill="url(#commitFill)"/>
-    <path d="{commit_line}" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak {commit_max:g}</text>
-    {commit_ticks}
-  </g>
+  {render_commit_chart(latest, commit_area, commit_line, commit_max, commit_ticks)}
 
-  <g>
-    <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
-    <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
-    <text x="846" y="282" class="note" text-anchor="end">now {format_compact(latest.lines_per_day)}</text>
-    {chart_grid(506, 846)}
-    <path d="{changed_area}" fill="url(#lineFill)"/>
-    <path d="{changed_line}" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak {format_compact(changed_max)}</text>
-    {changed_ticks}
-  </g>
+  {render_changed_chart(latest, changed_area, changed_line, changed_max, changed_ticks)}
 
   <text x="54" y="472" class="label">SOURCE LOC MIX</text>
   <text x="866" y="472" class="muted" text-anchor="end">{best_text}</text>
