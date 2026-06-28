@@ -11,6 +11,47 @@ import generate_code_metrics as metrics
 
 
 class GenerateCodeMetricsTests(unittest.TestCase):
+    def test_strip_block_comments(self):
+        # Language with no block comments
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("x = 1", state, "Python"), "x = 1")
+        self.assertEqual(state, {"end": None})
+
+        # Single line block comment
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("const x = 1; /* comment */ let y = 2;", state, "TypeScript"), "const x = 1;  let y = 2;")
+        self.assertEqual(state, {"end": None})
+
+        # Multiple single line block comments
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("a /* 1 */ + b /* 2 */", state, "TypeScript"), "a  + b ")
+        self.assertEqual(state, {"end": None})
+
+        # Multi-line block comment start
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("const x = 1; /* start", state, "TypeScript"), "const x = 1; ")
+        self.assertEqual(state, {"end": "*/"})
+
+        # Multi-line block comment middle
+        state = {"end": "*/"}
+        self.assertEqual(metrics.strip_block_comments("middle of comment", state, "TypeScript"), "")
+        self.assertEqual(state, {"end": "*/"})
+
+        # Multi-line block comment end
+        state = {"end": "*/"}
+        self.assertEqual(metrics.strip_block_comments("end */ let y = 2;", state, "TypeScript"), " let y = 2;")
+        self.assertEqual(state, {"end": None})
+
+        # Different comment tokens
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("<div><!-- comment --></div>", state, "HTML"), "<div></div>")
+        self.assertEqual(state, {"end": None})
+
+        # Multi-line HTML comment
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("<div><!-- start", state, "HTML"), "<div>")
+        self.assertEqual(state, {"end": "-->"})
+
     def test_format_compact(self):
         self.assertEqual(metrics.format_compact(999), "999")
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
