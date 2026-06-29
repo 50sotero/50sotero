@@ -11,6 +11,22 @@ import generate_code_metrics as metrics
 
 
 class GenerateCodeMetricsTests(unittest.TestCase):
+    def test_stat_box_escapes_html(self):
+        svg = metrics.stat_box(54, "<script>", "A & B")
+        self.assertIn("&lt;script&gt;", svg)
+        self.assertIn("A &amp; B", svg)
+        self.assertNotIn("<script>", svg)
+        self.assertNotIn("A & B", svg)
+
+    def test_stat_box_renders_svg_group(self):
+        svg = metrics.stat_box(54, 1234, "COMMITS", width=150)
+        self.assertIn('<rect x="54"', svg)
+        self.assertIn('width="150"', svg)
+        self.assertIn(">1234<", svg)
+        self.assertIn(">COMMITS<", svg)
+        self.assertTrue(svg.startswith("<g>"))
+        self.assertTrue(svg.endswith("</g>"))
+
     def test_format_compact(self):
         self.assertEqual(metrics.format_compact(999), "999")
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
