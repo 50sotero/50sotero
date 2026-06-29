@@ -16,6 +16,14 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
         self.assertEqual(metrics.format_compact(1_799_327), "1.8M")
 
+    def test_language_for(self):
+        self.assertEqual(metrics.language_for(Path("main.py")), "Python")
+        self.assertEqual(metrics.language_for(Path("app.ts")), "TypeScript")
+        self.assertEqual(metrics.language_for(Path("Dockerfile")), "Dockerfile")
+        self.assertEqual(metrics.language_for(Path("dockerfile")), "Dockerfile")
+        self.assertEqual(metrics.language_for(Path("App.TS")), "TypeScript")
+        self.assertIsNone(metrics.language_for(Path("readme.md")))
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
