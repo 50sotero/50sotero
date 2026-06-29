@@ -78,6 +78,15 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(series[0].commits_per_day, 0.2)
         self.assertEqual(series[0].lines_per_day, 2)
 
+    def test_chart_grid(self):
+        result = metrics.chart_grid(10, 20)
+        expected = (
+            '<line x1="10" y1="298" x2="20" y2="298" stroke="#263244"/>'
+            '<line x1="10" y1="341" x2="20" y2="341" stroke="#263244"/>'
+            '<line x1="10" y1="384" x2="20" y2="384" stroke="#263244"/>'
+        )
+        self.assertEqual(result, expected)
+
     def test_render_svg_uses_source_loc_mix(self):
         card = metrics.MetricsCard(
             owner="octo",
