@@ -16,6 +16,11 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
         self.assertEqual(metrics.format_compact(1_799_327), "1.8M")
 
+    def test_add_month(self):
+        self.assertEqual(metrics.add_month(date(2026, 1, 15)), date(2026, 2, 1))
+        self.assertEqual(metrics.add_month(date(2026, 6, 30)), date(2026, 7, 1))
+        self.assertEqual(metrics.add_month(date(2026, 12, 31)), date(2027, 1, 1))
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
