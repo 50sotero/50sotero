@@ -414,26 +414,77 @@ def fetch_commit_stats(
 ) -> list[CommitStat]:
     stats: list[CommitStat] = []
     since_text = since.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    user_query = "query($login:String!) { user(login:$login) { id } }"
+    user_result = client.request_json("POST", "/graphql", {"query": user_query, "variables": {"login": owner}})
+    user_data = user_result.get("data", {}).get("user")
+    if not user_data:
+        return []
+    author_id = user_data["id"]
+
+    query = """
+    query($owner:String!, $repo:String!, $since:GitTimestamp!, $authorId:ID!, $cursor:String) {
+      repository(owner:$owner, name:$repo) {
+        defaultBranchRef {
+          target {
+            ... on Commit {
+              history(since:$since, author:{id:$authorId}, first:100, after:$cursor) {
+                pageInfo { hasNextPage endCursor }
+                nodes {
+                  oid
+                  authoredDate
+                  additions
+                  deletions
+                  changedFilesIfAvailable
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
     for repo in repositories:
-        params = urllib.parse.urlencode({"author": owner, "since": since_text, "per_page": 100})
-        path = f"/repos/{owner}/{repo.name}/commits?{params}"
-        for summary in client.paginated_json(path):
-            detail = client.request_json("GET", f"/repos/{owner}/{repo.name}/commits/{summary['sha']}")
-            commit_stats = detail.get("stats") or {}
-            commit_date = datetime.fromisoformat(
-                summary["commit"]["author"]["date"].replace("Z", "+00:00")
-            )
-            stats.append(
-                CommitStat(
-                    repo=repo.name,
-                    private=repo.private,
-                    sha=summary["sha"],
-                    date=commit_date,
-                    additions=int(commit_stats.get("additions") or 0),
-                    deletions=int(commit_stats.get("deletions") or 0),
-                    files=len(detail.get("files") or []),
+        cursor = None
+        while True:
+            payload = {
+                "query": query,
+                "variables": {
+                    "owner": owner,
+                    "repo": repo.name,
+                    "since": since_text,
+                    "authorId": author_id,
+                    "cursor": cursor
+                }
+            }
+            result = client.request_json("POST", "/graphql", payload)
+            repo_node = result.get("data", {}).get("repository")
+            if not repo_node or not repo_node.get("defaultBranchRef"):
+                break
+
+            history = repo_node["defaultBranchRef"]["target"].get("history")
+            if not history:
+                break
+
+            for node in history.get("nodes") or []:
+                commit_date = datetime.fromisoformat(node["authoredDate"].replace("Z", "+00:00"))
+                stats.append(
+                    CommitStat(
+                        repo=repo.name,
+                        private=repo.private,
+                        sha=node["oid"],
+                        date=commit_date,
+                        additions=node.get("additions") or 0,
+                        deletions=node.get("deletions") or 0,
+                        files=node.get("changedFilesIfAvailable") or 0,
+                    )
                 )
-            )
+
+            if not history.get("pageInfo", {}).get("hasNextPage"):
+                break
+            cursor = history["pageInfo"]["endCursor"]
+
     return stats
 
 
