@@ -197,6 +197,13 @@ class LocMetrics:
 
 
 @dataclass(frozen=True)
+class CardConfig:
+    owner: str
+    today: date
+    months: int
+
+
+@dataclass(frozen=True)
 class MetricsCard:
     owner: str
     period_label: str
@@ -582,24 +589,22 @@ def grouped_languages(loc: LocMetrics, count: int = 5) -> list[LanguageMetric]:
 
 
 def build_card(
-    owner: str,
+    config: CardConfig,
     repositories: list[Repository],
     commit_stats: list[CommitStat],
     loc_metrics: LocMetrics,
-    today: date,
-    months: int,
 ) -> MetricsCard:
-    start = first_day_months_ago(today, months)
-    monthly = build_monthly_series(commit_stats, start=start, end=today)
-    total_days = (today - start).days + 1
+    start = first_day_months_ago(config.today, config.months)
+    monthly = build_monthly_series(commit_stats, start=start, end=config.today)
+    total_days = (config.today - start).days + 1
     total_additions = sum(commit.additions for commit in commit_stats)
     total_deletions = sum(commit.deletions for commit in commit_stats)
     total_changed = total_additions + total_deletions
     active_days = len({commit.date.date() for commit in commit_stats})
     return MetricsCard(
-        owner=owner,
-        period_label=f"{start.strftime('%b %Y')}-{today.strftime('%b %Y')}",
-        updated_label=today.strftime("%b %-d, %Y") if os.name != "nt" else today.strftime("%b %#d, %Y"),
+        owner=config.owner,
+        period_label=f"{start.strftime('%b %Y')}-{config.today.strftime('%b %Y')}",
+        updated_label=config.today.strftime("%b %-d, %Y") if os.name != "nt" else config.today.strftime("%b %#d, %Y"),
         repo_count=len(repositories),
         public_repos=sum(1 for repo in repositories if not repo.private),
         private_repos=sum(1 for repo in repositories if repo.private),
@@ -839,7 +844,8 @@ def main(argv: list[str] | None = None) -> int:
         commits = fetch_commit_stats(client, owner, repositories, since)
         loc = count_source_loc_from_archives(client, owner, repositories)
 
-    card = build_card(owner, repositories, commits, loc, today=today, months=args.months)
+    config = CardConfig(owner=owner, today=today, months=args.months)
+    card = build_card(config, repositories, commits, loc)
     write_svg(Path(args.output), render_svg(card))
     print(f"wrote {args.output}")
     return 0
