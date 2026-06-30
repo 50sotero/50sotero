@@ -26,18 +26,6 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         header_malformed = 'https://api.github.com/user/repos?page=3&per_page=100; rel="next"'
         self.assertIsNone(metrics.parse_next_link(header_malformed))
 
-        header_missing_end = '<https://api.github.com/user/repos?page=3&per_page=100; rel="next"'
-        self.assertIsNone(metrics.parse_next_link(header_missing_end))
-
-        header_missing_start = 'https://api.github.com/user/repos?page=3&per_page=100>; rel="next"'
-        self.assertIsNone(metrics.parse_next_link(header_missing_start))
-
-        header_flipped = '>https://api.github.com/user/repos?page=3&per_page=100<; rel="next"'
-        self.assertIsNone(metrics.parse_next_link(header_flipped))
-
-        header_multiple_parts = '<https://api.github.com/user/repos?page=1>; rel="first", <https://api.github.com/user/repos?page=3>; rel="next", <https://api.github.com/user/repos?page=5>; rel="last"'
-        self.assertEqual(metrics.parse_next_link(header_multiple_parts), "https://api.github.com/user/repos?page=3")
-
     def test_format_compact(self):
         self.assertEqual(metrics.format_compact(999), "999")
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
