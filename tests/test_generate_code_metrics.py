@@ -107,6 +107,26 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(other.percent, 20.0)
         self.assertEqual(other.files, 3)
 
+    def test_should_skip(self):
+        from pathlib import Path, PurePosixPath
+
+        # Test paths that should not be skipped
+        self.assertFalse(metrics.should_skip(Path("scripts/generate_code_metrics.py")))
+        self.assertFalse(metrics.should_skip(PurePosixPath("tests/test_generate_code_metrics.py")))
+        self.assertFalse(metrics.should_skip(Path("README.md")))
+
+        # Test paths that should be skipped
+        self.assertTrue(metrics.should_skip(Path(".git/HEAD")))
+        self.assertTrue(metrics.should_skip(PurePosixPath(".github/workflows/ci.yml")))
+        self.assertTrue(metrics.should_skip(Path("node_modules/package/index.js")))
+
+        # Test paths where a SKIP_DIR is in the middle
+        self.assertTrue(metrics.should_skip(Path("project/node_modules/package/index.js")))
+
+        # Test paths that partially match a SKIP_DIR (should not skip)
+        self.assertFalse(metrics.should_skip(Path("github_stuff/file.py")))
+        self.assertFalse(metrics.should_skip(Path("my_build_script.sh")))
+
     def test_monthly_series_uses_partial_current_month(self):
         commits = [
             metrics.CommitStat(
