@@ -6,7 +6,6 @@ copied into a profile README repository and run from GitHub Actions without
 installing dependencies.
 """
 
-from __future__ import annotations
 
 import argparse
 import base64
