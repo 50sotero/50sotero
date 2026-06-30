@@ -84,26 +84,26 @@ LANG_BY_SUFFIX = {
 }
 
 LINE_COMMENT = {
-    "Astro": ["//"],
-    "C/C++": ["//"],
-    "C#": ["//"],
-    "Dockerfile": ["#"],
-    "Go": ["//"],
-    "HCL": ["#", "//"],
-    "Java": ["//"],
-    "JavaScript": ["//"],
-    "Jupyter Notebook": ["#"],
-    "PHP": ["//", "#"],
-    "PowerShell": ["#"],
-    "Python": ["#"],
-    "R": ["#"],
-    "Rust": ["//"],
-    "Sass": ["//"],
-    "SCSS": ["//"],
-    "Shell": ["#"],
-    "SQL": ["--"],
-    "TypeScript": ["//"],
-    "Vue": ["//"],
+    "Astro": ("//",),
+    "C/C++": ("//",),
+    "C#": ("//",),
+    "Dockerfile": ("#",),
+    "Go": ("//",),
+    "HCL": ("#", "//"),
+    "Java": ("//",),
+    "JavaScript": ("//",),
+    "Jupyter Notebook": ("#",),
+    "PHP": ("//", "#"),
+    "PowerShell": ("#",),
+    "Python": ("#",),
+    "R": ("#",),
+    "Rust": ("//",),
+    "Sass": ("//",),
+    "SCSS": ("//",),
+    "Shell": ("#",),
+    "SQL": ("--",),
+    "TypeScript": ("//",),
+    "Vue": ("//",),
 }
 
 BLOCK_COMMENT = {
@@ -462,7 +462,7 @@ def is_code_line(line: str, state: dict[str, str | None], lang: str) -> bool:
     stripped = strip_block_comments(line, state, lang).strip()
     if not stripped:
         return False
-    return not any(stripped.startswith(token) for token in LINE_COMMENT.get(lang, []))
+    return not stripped.startswith(LINE_COMMENT.get(lang, ()))
 
 
 def count_text_lines(text: str, lang: str) -> int:
