@@ -172,6 +172,25 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertIn("75%", svg)
         self.assertIn("Source LOC: 120", svg)
 
+    def test_safe_redirect_handler_strips_auth_header_on_cross_domain(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "https://external.com/test"
+        )
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_keeps_auth_header_on_same_domain(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "https://api.github.com/new"
+        )
+        self.assertTrue(new_req.has_header("Authorization"))
+        self.assertEqual(new_req.get_header("Authorization"), "token")
+
 
 if __name__ == "__main__":
     unittest.main()
