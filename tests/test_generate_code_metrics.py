@@ -62,6 +62,51 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(loc.languages[0].name, "TypeScript")
         self.assertEqual(loc.languages[0].loc, 2)
 
+    def test_count_text_lines(self):
+        # Empty and whitespace
+        self.assertEqual(metrics.count_text_lines("", "Python"), 0)
+        self.assertEqual(metrics.count_text_lines("   \n\t\n  ", "Python"), 0)
+
+        # Python single-line comments
+        python_code = (
+            "# This is a comment\n"
+            "def my_func():\n"
+            "    # Another comment\n"
+            "    pass\n"
+        )
+        self.assertEqual(metrics.count_text_lines(python_code, "Python"), 2)
+
+        # JavaScript block and single-line comments
+        js_code = (
+            "/* Multi-line\n"
+            "   comment\n"
+            "   here */\n"
+            "const x = 1;\n"
+            "/* Inline */ const y = 2; // Line comment\n"
+        )
+        self.assertEqual(metrics.count_text_lines(js_code, "JavaScript"), 2)
+
+        # HTML comments
+        html_code = (
+            "<!--\n"
+            "  Some comment\n"
+            "-->\n"
+            "<div>\n"
+            "  <!-- Inline comment --> Hello\n"
+            "</div>\n"
+        )
+        self.assertEqual(metrics.count_text_lines(html_code, "HTML"), 3)
+
+        # Mixed block comments spanning lines
+        mixed_code = (
+            "\n"
+            "/* block start\n"
+            "*/ code_after_block_end()\n"
+            "code_before_block_start() /*\n"
+            "block end */\n"
+        )
+        self.assertEqual(metrics.count_text_lines(mixed_code, "JavaScript"), 2)
+
     def test_notebook_counter_counts_code_cells_not_json(self):
         notebook = {
             "cells": [
