@@ -277,6 +277,60 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
 
+    def test_load_fixture(self):
+        fixture_data = {
+            "repositories": [
+                {"name": "demo-public", "private": False, "default_branch": "main"},
+                {"name": "demo-private", "private": True, "default_branch": "develop"},
+            ],
+            "commits": [
+                {
+                    "repo": "demo-public",
+                    "private": False,
+                    "sha": "a",
+                    "date": "2026-06-01T10:00:00Z",
+                    "additions": 120,
+                    "deletions": 20,
+                    "files": 3,
+                }
+            ],
+            "languages": [
+                {"language": "Python", "loc": 90, "files": 2},
+                {"language": "TypeScript", "loc": 30, "files": 1},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.json"
+            path.write_text(json.dumps(fixture_data), encoding="utf-8")
+
+            repos, commits, loc = metrics.load_fixture(path)
+
+            self.assertEqual(len(repos), 2)
+            self.assertEqual(repos[0].name, "demo-public")
+            self.assertFalse(repos[0].private)
+            self.assertEqual(repos[0].default_branch, "main")
+            self.assertEqual(repos[1].name, "demo-private")
+            self.assertTrue(repos[1].private)
+            self.assertEqual(repos[1].default_branch, "develop")
+
+            self.assertEqual(len(commits), 1)
+            self.assertEqual(commits[0].repo, "demo-public")
+            self.assertFalse(commits[0].private)
+            self.assertEqual(commits[0].sha, "a")
+            self.assertEqual(commits[0].date, datetime(2026, 6, 1, 10, 0, tzinfo=timezone.utc))
+            self.assertEqual(commits[0].additions, 120)
+            self.assertEqual(commits[0].deletions, 20)
+            self.assertEqual(commits[0].files, 3)
+
+            self.assertEqual(loc.total_loc, 120)
+            self.assertEqual(len(loc.languages), 2)
+            self.assertEqual(loc.languages[0].name, "Python")
+            self.assertEqual(loc.languages[0].loc, 90)
+            self.assertEqual(loc.languages[0].files, 2)
+            self.assertEqual(loc.languages[1].name, "TypeScript")
+            self.assertEqual(loc.languages[1].loc, 30)
+            self.assertEqual(loc.languages[1].files, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
