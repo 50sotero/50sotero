@@ -2,6 +2,7 @@ import json
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -276,6 +277,35 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         )
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
+
+    @unittest.mock.patch.dict("os.environ", {"GITHUB_REPOSITORY_OWNER": "default_user"})
+    def test_parse_args_defaults(self):
+        args = metrics.parse_args([])
+        self.assertEqual(args.user, "default_user")
+        self.assertEqual(args.output, "assets/code-metrics.svg")
+        self.assertEqual(args.months, 12)
+        self.assertEqual(args.token_env, "METRICS_TOKEN")
+        self.assertIsNone(args.fixture)
+
+    def test_parse_args_explicit_values(self):
+        argv = [
+            "--user", "test_org",
+            "--output", "test_out.svg",
+            "--months", "6",
+            "--token-env", "CUSTOM_TOKEN",
+            "--fixture", "test_fixture.json"
+        ]
+        args = metrics.parse_args(argv)
+        self.assertEqual(args.user, "test_org")
+        self.assertEqual(args.output, "test_out.svg")
+        self.assertEqual(args.months, 6)
+        self.assertEqual(args.token_env, "CUSTOM_TOKEN")
+        self.assertEqual(args.fixture, Path("test_fixture.json"))
+
+    @unittest.mock.patch("sys.stderr")
+    def test_parse_args_invalid_type(self, mock_stderr):
+        with self.assertRaises(SystemExit):
+            metrics.parse_args(["--months", "not_an_int"])
 
 
 if __name__ == "__main__":
