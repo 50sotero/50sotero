@@ -597,6 +597,43 @@ def count_source_loc(paths: Iterable[Path]) -> LocMetrics:
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
+def _process_zip_member(zip_file: zipfile.ZipFile, member: zipfile.ZipInfo) -> tuple[str, int] | None:
+    if member.is_dir():
+        return None
+    path = PurePosixPath(member.filename)
+    relative_parts = path.parts[1:] if len(path.parts) > 1 else path.parts
+    relative = PurePosixPath(*relative_parts)
+    if should_skip(relative):
+        return None
+    lang = language_for(relative)
+    if not lang:
+        return None
+
+    if member.file_size > MAX_FILE_SIZE:
+        return None
+
+    try:
+        with zip_file.open(member) as f:
+            raw = f.read(MAX_FILE_SIZE + 1)
+            if len(raw) > MAX_FILE_SIZE:
+                return None
+    except zipfile.BadZipFile:
+        return None
+
+    if lang == "Jupyter Notebook":
+        try:
+            data = json.loads(raw.decode("utf-8", errors="ignore"))
+        except json.JSONDecodeError:
+            return None
+        loc = count_notebook_data(data)
+    else:
+        loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
+    if loc <= 0:
+        return None
+
+    return lang, loc
+
+
 def count_source_loc_from_archives(
     client: GitHubClient,
     owner: str,
@@ -610,40 +647,11 @@ def count_source_loc_from_archives(
         repos_scanned += 1
         with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
             for member in zip_file.infolist():
-                if member.is_dir():
-                    continue
-                path = PurePosixPath(member.filename)
-                relative_parts = path.parts[1:] if len(path.parts) > 1 else path.parts
-                relative = PurePosixPath(*relative_parts)
-                if should_skip(relative):
-                    continue
-                lang = language_for(relative)
-                if not lang:
-                    continue
-
-                if member.file_size > MAX_FILE_SIZE:
-                    continue
-
-                try:
-                    with zip_file.open(member) as f:
-                        raw = f.read(MAX_FILE_SIZE + 1)
-                        if len(raw) > MAX_FILE_SIZE:
-                            continue
-                except zipfile.BadZipFile:
-                    continue
-
-                if lang == "Jupyter Notebook":
-                    try:
-                        data = json.loads(raw.decode("utf-8", errors="ignore"))
-                    except json.JSONDecodeError:
-                        continue
-                    loc = count_notebook_data(data)
-                else:
-                    loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
-                if loc <= 0:
-                    continue
-                totals[lang] = totals.get(lang, 0) + loc
-                files[lang] = files.get(lang, 0) + 1
+                result = _process_zip_member(zip_file, member)
+                if result:
+                    lang, loc = result
+                    totals[lang] = totals.get(lang, 0) + loc
+                    files[lang] = files.get(lang, 0) + 1
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
