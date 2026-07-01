@@ -261,18 +261,27 @@ class GitHubClient:
             return response.read()
 
     def paginated_json(self, path: str) -> Iterable[Any]:
-        url = self._url(path)
+        url = self._api_origin_url(path)
         while url:
             req = urllib.request.Request(url, headers=self.headers)
             with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
-                url = parse_next_link(response.headers.get("Link", ""))
+                next_url = parse_next_link(response.headers.get("Link", ""))
+                url = self._api_origin_url(next_url) if next_url else None
 
     def _url(self, path: str) -> str:
         if path.startswith("http"):
             return path
         return f"{self.api_url}/{path.lstrip('/')}"
+
+    def _api_origin_url(self, path: str) -> str:
+        url = self._url(path)
+        api_origin = urllib.parse.urlsplit(self.api_url)
+        target_origin = urllib.parse.urlsplit(url)
+        if (target_origin.scheme, target_origin.netloc) != (api_origin.scheme, api_origin.netloc):
+            raise ValueError(f"Refusing to request URL outside GitHub API origin: {url}")
+        return url
 
 
 def parse_next_link(link_header: str) -> str | None:

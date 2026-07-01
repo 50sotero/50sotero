@@ -29,6 +29,44 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         new_req_same = handler.redirect_request(req, None, 302, "Found", {}, "http://example.com/otherpath")
         self.assertTrue(new_req_same.has_header("Authorization"))
 
+    def test_paginated_json_rejects_cross_origin_next_link_before_request(self):
+        class FakeResponse:
+            def __init__(self, payload, link=""):
+                self._payload = payload
+                self.headers = {"Link": link}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return json.dumps(self._payload).encode("utf-8")
+
+        class FakeOpener:
+            def __init__(self):
+                self.requests = []
+                self.responses = [
+                    FakeResponse(
+                        [{"id": 1}],
+                        '<https://tokens.example.test/repos?page=2>; rel="next"',
+                    ),
+                    FakeResponse([]),
+                ]
+
+            def open(self, req, timeout):
+                self.requests.append(req)
+                return self.responses.pop(0)
+
+        client = metrics.GitHubClient("secret")
+        client.opener = FakeOpener()
+
+        with self.assertRaisesRegex(ValueError, "outside GitHub API origin"):
+            list(client.paginated_json("/repos/octo/demo/commits"))
+
+        self.assertEqual(len(client.opener.requests), 1)
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
