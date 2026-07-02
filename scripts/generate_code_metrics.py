@@ -16,6 +16,7 @@ import sys
 import urllib.parse
 import urllib.request
 import zipfile
+import concurrent.futures
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path, PurePosixPath
@@ -605,9 +606,11 @@ def count_source_loc_from_archives(
     totals: dict[str, int] = {}
     files: dict[str, int] = {}
     repos_scanned = 0
-    for repo in repositories:
+
+    def _process_repo(repo: Repository) -> tuple[dict[str, int], dict[str, int]]:
         archive = client.request_bytes(f"/repos/{owner}/{repo.name}/zipball/{repo.default_branch}")
-        repos_scanned += 1
+        repo_totals: dict[str, int] = {}
+        repo_files: dict[str, int] = {}
         with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
             for member in zip_file.infolist():
                 if member.is_dir():
@@ -642,8 +645,20 @@ def count_source_loc_from_archives(
                     loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
                 if loc <= 0:
                     continue
+                repo_totals[lang] = repo_totals.get(lang, 0) + loc
+                repo_files[lang] = repo_files.get(lang, 0) + 1
+        return repo_totals, repo_files
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(_process_repo, repo): repo for repo in repositories}
+        for future in concurrent.futures.as_completed(futures):
+            repo_totals, repo_files = future.result()
+            repos_scanned += 1
+            for lang, loc in repo_totals.items():
                 totals[lang] = totals.get(lang, 0) + loc
-                files[lang] = files.get(lang, 0) + 1
+            for lang, count in repo_files.items():
+                files[lang] = files.get(lang, 0) + count
+
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
