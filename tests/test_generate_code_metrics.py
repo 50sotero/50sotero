@@ -56,6 +56,35 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 1), date(2024, 3, 1))
         # A few months into the previous year
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 6), date(2023, 10, 1))
+        # 11 months ago, should cross the year boundary correctly
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 1, 15), 12), date(2023, 2, 1))
+        # Many years ago
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 6, 15), 121), date(2014, 6, 1))
+        # End of year
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 12, 31), 2), date(2024, 11, 1))
+
+    def test_month_starts(self):
+        # Same month
+        self.assertEqual(metrics.month_starts(date(2024, 3, 5), date(2024, 3, 20)), [date(2024, 3, 1)])
+        # Crossing year boundary
+        self.assertEqual(
+            metrics.month_starts(date(2023, 11, 15), date(2024, 2, 10)),
+            [date(2023, 11, 1), date(2023, 12, 1), date(2024, 1, 1), date(2024, 2, 1)]
+        )
+        # Exactly one year
+        self.assertEqual(
+            len(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))),
+            12
+        )
+        self.assertEqual(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))[0], date(2023, 1, 1))
+        self.assertEqual(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))[-1], date(2023, 12, 1))
+        # End before start
+        self.assertEqual(metrics.month_starts(date(2024, 3, 15), date(2024, 2, 10)), [])
+        # Start and end on first of month
+        self.assertEqual(
+            metrics.month_starts(date(2024, 1, 1), date(2024, 3, 1)),
+            [date(2024, 1, 1), date(2024, 2, 1), date(2024, 3, 1)]
+        )
 
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
