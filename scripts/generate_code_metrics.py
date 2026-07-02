@@ -28,6 +28,7 @@ GITHUB_API = "https://api.github.com"
 CARD_WIDTH = 920
 CARD_HEIGHT = 640
 MAX_FILE_SIZE = 1048576  # 1MB
+MAX_ARCHIVE_WORKERS = 4
 
 SKIP_DIRS = {
     ".git",
@@ -649,7 +650,11 @@ def count_source_loc_from_archives(
                 repo_files[lang] = repo_files.get(lang, 0) + 1
         return repo_totals, repo_files
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    if not repositories:
+        return loc_metrics_from_totals(totals, files, repos_scanned)
+
+    max_workers = min(MAX_ARCHIVE_WORKERS, len(repositories))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(_process_repo, repo): repo for repo in repositories}
         for future in concurrent.futures.as_completed(futures):
             repo_totals, repo_files = future.result()

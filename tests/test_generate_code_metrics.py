@@ -2,6 +2,8 @@ import json
 import sys
 import tempfile
 import unittest
+import zipfile
+from io import BytesIO
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -102,6 +104,64 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(loc.total_loc, 2)
         self.assertEqual(loc.languages[0].name, "TypeScript")
         self.assertEqual(loc.languages[0].loc, 2)
+
+    def test_archive_loc_counter_caps_parallel_downloads(self):
+        archive = BytesIO()
+        with zipfile.ZipFile(archive, "w") as zip_file:
+            zip_file.writestr("repo-main/src/app.py", "print('hello')\n")
+        archive_bytes = archive.getvalue()
+
+        class FakeClient:
+            def __init__(self):
+                self.paths = []
+
+            def request_bytes(self, path):
+                self.paths.append(path)
+                return archive_bytes
+
+        class ImmediateFuture:
+            def __init__(self, result):
+                self._result = result
+
+            def result(self):
+                return self._result
+
+        class RecordingExecutor:
+            max_workers_seen = []
+
+            def __init__(self, max_workers=None):
+                self.max_workers = max_workers
+                RecordingExecutor.max_workers_seen.append(max_workers)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, fn, *args):
+                return ImmediateFuture(fn(*args))
+
+        original_executor = metrics.concurrent.futures.ThreadPoolExecutor
+        original_as_completed = metrics.concurrent.futures.as_completed
+        try:
+            metrics.concurrent.futures.ThreadPoolExecutor = RecordingExecutor
+            metrics.concurrent.futures.as_completed = lambda futures: list(futures)
+            client = FakeClient()
+            repositories = [
+                metrics.Repository(name=f"repo-{index}", private=False, default_branch="main")
+                for index in range(10)
+            ]
+
+            loc = metrics.count_source_loc_from_archives(client, "octo", repositories)
+        finally:
+            metrics.concurrent.futures.ThreadPoolExecutor = original_executor
+            metrics.concurrent.futures.as_completed = original_as_completed
+
+        self.assertEqual(RecordingExecutor.max_workers_seen, [metrics.MAX_ARCHIVE_WORKERS])
+        self.assertEqual(len(client.paths), 10)
+        self.assertEqual(loc.repos_scanned, 10)
+        self.assertEqual(loc.total_loc, 10)
 
     def test_count_text_lines(self):
         # Empty and whitespace
