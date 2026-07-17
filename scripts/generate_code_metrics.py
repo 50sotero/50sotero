@@ -226,16 +226,25 @@ class MetricsCard:
     languages: list[LanguageMetric]
 
 
+def _get_origin(url: str) -> tuple[str, str, int]:
+    parsed = urllib.parse.urlparse(url)
+    scheme = parsed.scheme.lower()
+    host = (parsed.hostname or "").lower()
+    port = parsed.port
+    if port is None:
+        port = 443 if scheme == "https" else (80 if scheme == "http" else 0)
+    return (scheme, host, port)
+
+
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(
         self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
     ) -> urllib.request.Request | None:
         new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new_req is not None:
-            old_host = urllib.parse.urlparse(req.full_url).hostname
-            new_host = urllib.parse.urlparse(newurl).hostname
-            if old_host != new_host and new_req.has_header("Authorization"):
-                new_req.remove_header("Authorization")
+            if _get_origin(req.full_url) != _get_origin(newurl):
+                if new_req.has_header("Authorization"):
+                    new_req.remove_header("Authorization")
         return new_req
 
 
@@ -270,12 +279,19 @@ class GitHubClient:
 
     def paginated_json(self, path: str) -> Iterable[Any]:
         url = self._url(path)
+        base_origin = _get_origin(url)
         while url:
             req = urllib.request.Request(url, headers=self.headers)
             with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
-                url = parse_next_link(response.headers.get("Link", ""))
+                next_url = parse_next_link(response.headers.get("Link", ""))
+                if not next_url:
+                    break
+                abs_next_url = urllib.parse.urljoin(url, next_url)
+                if _get_origin(abs_next_url) != base_origin:
+                    raise ValueError("Cross-origin pagination URL rejected")
+                url = abs_next_url
 
     def _url(self, path: str) -> str:
         if path.startswith("http"):

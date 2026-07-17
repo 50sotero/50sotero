@@ -347,24 +347,126 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertIn("75%", svg)
         self.assertIn("Source LOC: 120", svg)
 
-    def test_safe_redirect_handler_strips_auth_header_on_cross_domain(self):
+    def test_safe_redirect_handler_strips_auth_header_on_cross_host(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://external.com/test"
         )
+        self.assertIsNotNone(new_req)
         self.assertFalse(new_req.has_header("Authorization"))
 
-    def test_safe_redirect_handler_keeps_auth_header_on_same_domain(self):
+    def test_safe_redirect_handler_strips_auth_header_on_cross_scheme(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "http://api.github.com/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_strips_auth_header_on_cross_port(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "https://api.github.com:8443/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_keeps_auth_header_on_same_origin(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://api.github.com/new"
         )
+        self.assertIsNotNone(new_req)
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
+
+    def test_paginated_json_rejects_cross_origin_link_before_request_two(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://evil.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        iterator = client.paginated_json("/test")
+
+        self.assertEqual(next(iterator), 1)
+        self.assertEqual(next(iterator), 2)
+        with self.assertRaises(ValueError) as cm:
+            next(iterator)
+        self.assertEqual(str(cm.exception), "Cross-origin pagination URL rejected")
+        self.assertEqual(client.opener.calls, 1)
+
+    def test_paginated_json_accepts_same_origin_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://api.github.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
+
+    def test_paginated_json_accepts_relative_path_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '</page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
 
     def test_load_fixture(self):
         fixture_data = {
