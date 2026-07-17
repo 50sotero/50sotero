@@ -2,6 +2,8 @@ import json
 import sys
 import tempfile
 import unittest
+import zipfile
+from io import BytesIO
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -56,6 +58,35 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 1), date(2024, 3, 1))
         # A few months into the previous year
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 6), date(2023, 10, 1))
+        # 11 months ago, should cross the year boundary correctly
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 1, 15), 12), date(2023, 2, 1))
+        # Many years ago
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 6, 15), 121), date(2014, 6, 1))
+        # End of year
+        self.assertEqual(metrics.first_day_months_ago(date(2024, 12, 31), 2), date(2024, 11, 1))
+
+    def test_month_starts(self):
+        # Same month
+        self.assertEqual(metrics.month_starts(date(2024, 3, 5), date(2024, 3, 20)), [date(2024, 3, 1)])
+        # Crossing year boundary
+        self.assertEqual(
+            metrics.month_starts(date(2023, 11, 15), date(2024, 2, 10)),
+            [date(2023, 11, 1), date(2023, 12, 1), date(2024, 1, 1), date(2024, 2, 1)]
+        )
+        # Exactly one year
+        self.assertEqual(
+            len(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))),
+            12
+        )
+        self.assertEqual(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))[0], date(2023, 1, 1))
+        self.assertEqual(metrics.month_starts(date(2023, 1, 1), date(2023, 12, 31))[-1], date(2023, 12, 1))
+        # End before start
+        self.assertEqual(metrics.month_starts(date(2024, 3, 15), date(2024, 2, 10)), [])
+        # Start and end on first of month
+        self.assertEqual(
+            metrics.month_starts(date(2024, 1, 1), date(2024, 3, 1)),
+            [date(2024, 1, 1), date(2024, 2, 1), date(2024, 3, 1)]
+        )
 
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -73,6 +104,64 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(loc.total_loc, 2)
         self.assertEqual(loc.languages[0].name, "TypeScript")
         self.assertEqual(loc.languages[0].loc, 2)
+
+    def test_archive_loc_counter_caps_parallel_downloads(self):
+        archive = BytesIO()
+        with zipfile.ZipFile(archive, "w") as zip_file:
+            zip_file.writestr("repo-main/src/app.py", "print('hello')\n")
+        archive_bytes = archive.getvalue()
+
+        class FakeClient:
+            def __init__(self):
+                self.paths = []
+
+            def request_bytes(self, path):
+                self.paths.append(path)
+                return archive_bytes
+
+        class ImmediateFuture:
+            def __init__(self, result):
+                self._result = result
+
+            def result(self):
+                return self._result
+
+        class RecordingExecutor:
+            max_workers_seen = []
+
+            def __init__(self, max_workers=None):
+                self.max_workers = max_workers
+                RecordingExecutor.max_workers_seen.append(max_workers)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def submit(self, fn, *args):
+                return ImmediateFuture(fn(*args))
+
+        original_executor = metrics.concurrent.futures.ThreadPoolExecutor
+        original_as_completed = metrics.concurrent.futures.as_completed
+        try:
+            metrics.concurrent.futures.ThreadPoolExecutor = RecordingExecutor
+            metrics.concurrent.futures.as_completed = lambda futures: list(futures)
+            client = FakeClient()
+            repositories = [
+                metrics.Repository(name=f"repo-{index}", private=False, default_branch="main")
+                for index in range(10)
+            ]
+
+            loc = metrics.count_source_loc_from_archives(client, "octo", repositories)
+        finally:
+            metrics.concurrent.futures.ThreadPoolExecutor = original_executor
+            metrics.concurrent.futures.as_completed = original_as_completed
+
+        self.assertEqual(RecordingExecutor.max_workers_seen, [metrics.MAX_ARCHIVE_WORKERS])
+        self.assertEqual(len(client.paths), 10)
+        self.assertEqual(loc.repos_scanned, 10)
+        self.assertEqual(loc.total_loc, 10)
 
     def test_count_text_lines(self):
         # Empty and whitespace
@@ -276,6 +365,60 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         )
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
+
+    def test_load_fixture(self):
+        fixture_data = {
+            "repositories": [
+                {"name": "demo-public", "private": False, "default_branch": "main"},
+                {"name": "demo-private", "private": True, "default_branch": "develop"},
+            ],
+            "commits": [
+                {
+                    "repo": "demo-public",
+                    "private": False,
+                    "sha": "a",
+                    "date": "2026-06-01T10:00:00Z",
+                    "additions": 120,
+                    "deletions": 20,
+                    "files": 3,
+                }
+            ],
+            "languages": [
+                {"language": "Python", "loc": 90, "files": 2},
+                {"language": "TypeScript", "loc": 30, "files": 1},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fixture.json"
+            path.write_text(json.dumps(fixture_data), encoding="utf-8")
+
+            repos, commits, loc = metrics.load_fixture(path)
+
+            self.assertEqual(len(repos), 2)
+            self.assertEqual(repos[0].name, "demo-public")
+            self.assertFalse(repos[0].private)
+            self.assertEqual(repos[0].default_branch, "main")
+            self.assertEqual(repos[1].name, "demo-private")
+            self.assertTrue(repos[1].private)
+            self.assertEqual(repos[1].default_branch, "develop")
+
+            self.assertEqual(len(commits), 1)
+            self.assertEqual(commits[0].repo, "demo-public")
+            self.assertFalse(commits[0].private)
+            self.assertEqual(commits[0].sha, "a")
+            self.assertEqual(commits[0].date, datetime(2026, 6, 1, 10, 0, tzinfo=timezone.utc))
+            self.assertEqual(commits[0].additions, 120)
+            self.assertEqual(commits[0].deletions, 20)
+            self.assertEqual(commits[0].files, 3)
+
+            self.assertEqual(loc.total_loc, 120)
+            self.assertEqual(len(loc.languages), 2)
+            self.assertEqual(loc.languages[0].name, "Python")
+            self.assertEqual(loc.languages[0].loc, 90)
+            self.assertEqual(loc.languages[0].files, 2)
+            self.assertEqual(loc.languages[1].name, "TypeScript")
+            self.assertEqual(loc.languages[1].loc, 30)
+            self.assertEqual(loc.languages[1].files, 1)
 
 
 if __name__ == "__main__":
