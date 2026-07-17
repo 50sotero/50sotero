@@ -6,10 +6,8 @@ copied into a profile README repository and run from GitHub Actions without
 installing dependencies.
 """
 
-from __future__ import annotations
 
 import argparse
-import base64
 import io
 import json
 import math
@@ -18,6 +16,7 @@ import sys
 import urllib.parse
 import urllib.request
 import zipfile
+import concurrent.futures
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path, PurePosixPath
@@ -28,6 +27,8 @@ from xml.sax.saxutils import escape
 GITHUB_API = "https://api.github.com"
 CARD_WIDTH = 920
 CARD_HEIGHT = 640
+MAX_FILE_SIZE = 1048576  # 1MB
+MAX_ARCHIVE_WORKERS = 4
 
 SKIP_DIRS = {
     ".git",
@@ -86,26 +87,26 @@ LANG_BY_SUFFIX = {
 }
 
 LINE_COMMENT = {
-    "Astro": ["//"],
-    "C/C++": ["//"],
-    "C#": ["//"],
-    "Dockerfile": ["#"],
-    "Go": ["//"],
-    "HCL": ["#", "//"],
-    "Java": ["//"],
-    "JavaScript": ["//"],
-    "Jupyter Notebook": ["#"],
-    "PHP": ["//", "#"],
-    "PowerShell": ["#"],
-    "Python": ["#"],
-    "R": ["#"],
-    "Rust": ["//"],
-    "Sass": ["//"],
-    "SCSS": ["//"],
-    "Shell": ["#"],
-    "SQL": ["--"],
-    "TypeScript": ["//"],
-    "Vue": ["//"],
+    "Astro": ("//",),
+    "C/C++": ("//",),
+    "C#": ("//",),
+    "Dockerfile": ("#",),
+    "Go": ("//",),
+    "HCL": ("#", "//"),
+    "Java": ("//",),
+    "JavaScript": ("//",),
+    "Jupyter Notebook": ("#",),
+    "PHP": ("//", "#"),
+    "PowerShell": ("#",),
+    "Python": ("#",),
+    "R": ("#",),
+    "Rust": ("//",),
+    "Sass": ("//",),
+    "SCSS": ("//",),
+    "Shell": ("#",),
+    "SQL": ("--",),
+    "TypeScript": ("//",),
+    "Vue": ("//",),
 }
 
 BLOCK_COMMENT = {
@@ -160,10 +161,6 @@ class CommitStat:
     deletions: int
     files: int
 
-    @property
-    def total(self) -> int:
-        return self.additions + self.deletions
-
 
 @dataclass(frozen=True)
 class MonthMetric:
@@ -203,6 +200,13 @@ class LocMetrics:
 
 
 @dataclass(frozen=True)
+class CardConfig:
+    owner: str
+    today: date
+    months: int
+
+
+@dataclass(frozen=True)
 class MetricsCard:
     owner: str
     period_label: str
@@ -222,11 +226,26 @@ class MetricsCard:
     languages: list[LanguageMetric]
 
 
+def _get_origin(url: str) -> tuple[str, str, int | None]:
+    parsed = urllib.parse.urlparse(url)
+    port = parsed.port
+    if port is None:
+        if parsed.scheme == "https":
+            port = 443
+        elif parsed.scheme == "http":
+            port = 80
+    return (parsed.scheme, parsed.hostname or "", port)
+
+
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> urllib.request.Request | None:
+    def redirect_request(
+        self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> urllib.request.Request | None:
         new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new_req is not None:
-            if req.host != new_req.host and new_req.has_header("Authorization"):
+            old_origin = _get_origin(req.full_url)
+            new_origin = _get_origin(newurl)
+            if old_origin != new_origin and new_req.has_header("Authorization"):
                 new_req.remove_header("Authorization")
         return new_req
 
@@ -261,27 +280,22 @@ class GitHubClient:
             return response.read()
 
     def paginated_json(self, path: str) -> Iterable[Any]:
-        url = self._api_origin_url(path)
+        url = self._url(path)
         while url:
             req = urllib.request.Request(url, headers=self.headers)
             with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
-                next_url = parse_next_link(response.headers.get("Link", ""))
-                url = self._api_origin_url(next_url) if next_url else None
+
+                next_path = parse_next_link(response.headers.get("Link", ""))
+                url = self._url(next_path) if next_path else ""
 
     def _url(self, path: str) -> str:
         if path.startswith("http"):
+            if _get_origin(path) != _get_origin(self.api_url):
+                raise ValueError("Refusing to request URL outside GitHub API origin")
             return path
         return f"{self.api_url}/{path.lstrip('/')}"
-
-    def _api_origin_url(self, path: str) -> str:
-        url = self._url(path)
-        api_origin = urllib.parse.urlsplit(self.api_url)
-        target_origin = urllib.parse.urlsplit(url)
-        if (target_origin.scheme, target_origin.netloc) != (api_origin.scheme, api_origin.netloc):
-            raise ValueError(f"Refusing to request URL outside GitHub API origin: {url}")
-        return url
 
 
 def parse_next_link(link_header: str) -> str | None:
@@ -332,14 +346,18 @@ def days_in_period_month(month_start: date, start: date, end: date) -> int:
 
 
 def build_monthly_series(commits: list[CommitStat], start: date, end: date) -> list[MonthMetric]:
+    commits_by_month: dict[tuple[int, int], list[CommitStat]] = {}
+    for commit in commits:
+        d = commit.date.date()
+        key = (d.year, d.month)
+        if key not in commits_by_month:
+            commits_by_month[key] = []
+        commits_by_month[key].append(commit)
+
     metrics = []
     for month_start in month_starts(start, end):
-        month_end = add_month(month_start)
-        month_commits = [
-            commit
-            for commit in commits
-            if month_start <= commit.date.date() < month_end
-        ]
+        key = (month_start.year, month_start.month)
+        month_commits = commits_by_month.get(key, [])
         metrics.append(
             MonthMetric(
                 label=month_start.strftime("%b"),
@@ -413,26 +431,77 @@ def fetch_commit_stats(
 ) -> list[CommitStat]:
     stats: list[CommitStat] = []
     since_text = since.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    user_query = "query($login:String!) { user(login:$login) { id } }"
+    user_result = client.request_json("POST", "/graphql", {"query": user_query, "variables": {"login": owner}})
+    user_data = user_result.get("data", {}).get("user")
+    if not user_data:
+        return []
+    author_id = user_data["id"]
+
+    query = """
+    query($owner:String!, $repo:String!, $since:GitTimestamp!, $authorId:ID!, $cursor:String) {
+      repository(owner:$owner, name:$repo) {
+        defaultBranchRef {
+          target {
+            ... on Commit {
+              history(since:$since, author:{id:$authorId}, first:100, after:$cursor) {
+                pageInfo { hasNextPage endCursor }
+                nodes {
+                  oid
+                  authoredDate
+                  additions
+                  deletions
+                  changedFilesIfAvailable
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
     for repo in repositories:
-        params = urllib.parse.urlencode({"author": owner, "since": since_text, "per_page": 100})
-        path = f"/repos/{owner}/{repo.name}/commits?{params}"
-        for summary in client.paginated_json(path):
-            detail = client.request_json("GET", f"/repos/{owner}/{repo.name}/commits/{summary['sha']}")
-            commit_stats = detail.get("stats") or {}
-            commit_date = datetime.fromisoformat(
-                summary["commit"]["author"]["date"].replace("Z", "+00:00")
-            )
-            stats.append(
-                CommitStat(
-                    repo=repo.name,
-                    private=repo.private,
-                    sha=summary["sha"],
-                    date=commit_date,
-                    additions=int(commit_stats.get("additions") or 0),
-                    deletions=int(commit_stats.get("deletions") or 0),
-                    files=len(detail.get("files") or []),
+        cursor = None
+        while True:
+            payload = {
+                "query": query,
+                "variables": {
+                    "owner": owner,
+                    "repo": repo.name,
+                    "since": since_text,
+                    "authorId": author_id,
+                    "cursor": cursor
+                }
+            }
+            result = client.request_json("POST", "/graphql", payload)
+            repo_node = result.get("data", {}).get("repository")
+            if not repo_node or not repo_node.get("defaultBranchRef"):
+                break
+
+            history = repo_node["defaultBranchRef"]["target"].get("history")
+            if not history:
+                break
+
+            for node in history.get("nodes") or []:
+                commit_date = datetime.fromisoformat(node["authoredDate"].replace("Z", "+00:00"))
+                stats.append(
+                    CommitStat(
+                        repo=repo.name,
+                        private=repo.private,
+                        sha=node["oid"],
+                        date=commit_date,
+                        additions=node.get("additions") or 0,
+                        deletions=node.get("deletions") or 0,
+                        files=node.get("changedFilesIfAvailable") or 0,
+                    )
                 )
-            )
+
+            if not history.get("pageInfo", {}).get("hasNextPage"):
+                break
+            cursor = history["pageInfo"]["endCursor"]
+
     return stats
 
 
@@ -476,7 +545,7 @@ def is_code_line(line: str, state: dict[str, str | None], lang: str) -> bool:
     stripped = strip_block_comments(line, state, lang).strip()
     if not stripped:
         return False
-    return not any(stripped.startswith(token) for token in LINE_COMMENT.get(lang, []))
+    return not stripped.startswith(LINE_COMMENT.get(lang, ()))
 
 
 def count_text_lines(text: str, lang: str) -> int:
@@ -519,20 +588,29 @@ def count_source_loc(paths: Iterable[Path]) -> LocMetrics:
         if not root.exists():
             continue
         repos_scanned += 1
-        for path in root.rglob("*"):
-            if not path.is_file() or should_skip(path):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+
+            p_dir = Path(dirpath)
+            if should_skip(p_dir):
+                dirnames[:] = []
                 continue
-            lang = language_for(path)
-            if not lang:
-                continue
-            if lang == "Jupyter Notebook":
-                loc = count_notebook_lines(path)
-            else:
-                loc = count_text_lines(path.read_text(encoding="utf-8", errors="ignore"), lang)
-            if loc <= 0:
-                continue
-            totals[lang] = totals.get(lang, 0) + loc
-            files[lang] = files.get(lang, 0) + 1
+
+            for filename in filenames:
+                path = p_dir / filename
+                if not path.is_file() or should_skip(path):
+                    continue
+                lang = language_for(path)
+                if not lang:
+                    continue
+                if lang == "Jupyter Notebook":
+                    loc = count_notebook_lines(path)
+                else:
+                    loc = count_text_lines(path.read_text(encoding="utf-8", errors="ignore"), lang)
+                if loc <= 0:
+                    continue
+                totals[lang] = totals.get(lang, 0) + loc
+                files[lang] = files.get(lang, 0) + 1
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
@@ -544,9 +622,11 @@ def count_source_loc_from_archives(
     totals: dict[str, int] = {}
     files: dict[str, int] = {}
     repos_scanned = 0
-    for repo in repositories:
+
+    def _process_repo(repo: Repository) -> tuple[dict[str, int], dict[str, int]]:
         archive = client.request_bytes(f"/repos/{owner}/{repo.name}/zipball/{repo.default_branch}")
-        repos_scanned += 1
+        repo_totals: dict[str, int] = {}
+        repo_files: dict[str, int] = {}
         with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
             for member in zip_file.infolist():
                 if member.is_dir():
@@ -559,7 +639,18 @@ def count_source_loc_from_archives(
                 lang = language_for(relative)
                 if not lang:
                     continue
-                raw = zip_file.read(member)
+
+                if member.file_size > MAX_FILE_SIZE:
+                    continue
+
+                try:
+                    with zip_file.open(member) as f:
+                        raw = f.read(MAX_FILE_SIZE + 1)
+                        if len(raw) > MAX_FILE_SIZE:
+                            continue
+                except zipfile.BadZipFile:
+                    continue
+
                 if lang == "Jupyter Notebook":
                     try:
                         data = json.loads(raw.decode("utf-8", errors="ignore"))
@@ -570,8 +661,24 @@ def count_source_loc_from_archives(
                     loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
                 if loc <= 0:
                     continue
+                repo_totals[lang] = repo_totals.get(lang, 0) + loc
+                repo_files[lang] = repo_files.get(lang, 0) + 1
+        return repo_totals, repo_files
+
+    if not repositories:
+        return loc_metrics_from_totals(totals, files, repos_scanned)
+
+    max_workers = min(MAX_ARCHIVE_WORKERS, len(repositories))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_process_repo, repo): repo for repo in repositories}
+        for future in concurrent.futures.as_completed(futures):
+            repo_totals, repo_files = future.result()
+            repos_scanned += 1
+            for lang, loc in repo_totals.items():
                 totals[lang] = totals.get(lang, 0) + loc
-                files[lang] = files.get(lang, 0) + 1
+            for lang, count in repo_files.items():
+                files[lang] = files.get(lang, 0) + count
+
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
@@ -607,24 +714,22 @@ def grouped_languages(loc: LocMetrics, count: int = 5) -> list[LanguageMetric]:
 
 
 def build_card(
-    owner: str,
+    config: CardConfig,
     repositories: list[Repository],
     commit_stats: list[CommitStat],
     loc_metrics: LocMetrics,
-    today: date,
-    months: int,
 ) -> MetricsCard:
-    start = first_day_months_ago(today, months)
-    monthly = build_monthly_series(commit_stats, start=start, end=today)
-    total_days = (today - start).days + 1
+    start = first_day_months_ago(config.today, config.months)
+    monthly = build_monthly_series(commit_stats, start=start, end=config.today)
+    total_days = (config.today - start).days + 1
     total_additions = sum(commit.additions for commit in commit_stats)
     total_deletions = sum(commit.deletions for commit in commit_stats)
     total_changed = total_additions + total_deletions
-    active_days = len({commit.date.date().isoformat() for commit in commit_stats})
+    active_days = len({commit.date.date() for commit in commit_stats})
     return MetricsCard(
-        owner=owner,
-        period_label=f"{start.strftime('%b %Y')}-{today.strftime('%b %Y')}",
-        updated_label=today.strftime("%b %-d, %Y") if os.name != "nt" else today.strftime("%b %#d, %Y"),
+        owner=config.owner,
+        period_label=f"{start.strftime('%b %Y')}-{config.today.strftime('%b %Y')}",
+        updated_label=config.today.strftime("%b %-d, %Y") if os.name != "nt" else config.today.strftime("%b %#d, %Y"),
         repo_count=len(repositories),
         public_repos=sum(1 for repo in repositories if not repo.private),
         private_repos=sum(1 for repo in repositories if repo.private),
@@ -656,6 +761,73 @@ def line_path(values: list[float], x: float, y: float, width: float, height: flo
     return line, area, max_value
 
 
+def render_svg_defs() -> str:
+    return """<defs>
+    <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="44" y1="40" x2="876" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset="0.5" stop-color="#58a6ff"/><stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="commitFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#58a6ff" stop-opacity="0.38"/><stop offset="1" stop-color="#58a6ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="lineFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f97316" stop-opacity="0.42"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#020617" flood-opacity="0.48"/></filter>
+    <clipPath id="langClip"><rect x="54" y="504" width="812" height="14" rx="7"/></clipPath>
+    <style>
+      .title { font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }
+      .sub { font: 500 13px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; }
+      .stat { font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }
+      .label { font: 700 11px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; letter-spacing: .04em; }
+      .panelTitle { font: 800 15px Segoe UI, Inter, Arial, sans-serif; fill: #e5edf7; }
+      .axis { font: 600 10px Segoe UI, Inter, Arial, sans-serif; fill: #64748b; }
+      .legend { font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #d6e2ef; }
+      .legendPct { font: 800 12px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; text-anchor: end; }
+      .note { font: 700 12px Segoe UI, Inter, Arial, sans-serif; fill: #7dd3fc; }
+      .muted { font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #94a3b8; }
+    </style>
+  </defs>"""
+
+
+def render_svg_stats(card: MetricsCard, net_sign: str, net_lines: int) -> str:
+    return f"""  {stat_box(54, card.total_commits, "COMMITS")}
+  {stat_box(260, card.avg_commits_per_day, "COMMITS / DAY")}
+  {stat_box(466, format_compact(card.avg_lines_per_day), "LINES CHANGED / DAY")}
+  {stat_box(672, card.active_days, "ACTIVE DAYS", width=194)}
+
+  <text x="54" y="232" class="muted">Repos: {card.repo_count} original ({card.public_repos} public / {card.private_repos} private)</text>
+  <text x="314" y="232" class="muted">Source LOC: {format_compact(card.source_loc)}</text>
+  <text x="484" y="232" class="muted">Added: +{format_compact(card.total_additions)}</text>
+  <text x="640" y="232" class="muted">Deleted: -{format_compact(card.total_deletions)}</text>
+  <text x="790" y="232" class="muted">Net: {net_sign}{format_compact(abs(net_lines))}</text>"""
+
+
+def render_chart_panel(
+    title: str,
+    x: int,
+    now_text: str,
+    area_path: str,
+    fill_url: str,
+    line_path: str,
+    line_color: str,
+    peak_text: str,
+    ticks: str,
+) -> str:
+    return f"""  <g>
+    <rect x="{x}" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
+    <text x="{x + 20}" y="282" class="panelTitle">{escape(title)}</text>
+    <text x="{x + 360}" y="282" class="note" text-anchor="end">{escape(now_text)}</text>
+    {chart_grid(x + 20, x + 360)}
+    <path d="{area_path}" fill="{fill_url}"/>
+    <path d="{line_path}" stroke="{line_color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="{x + 20}" y="397" class="axis">0</text><text x="{x + 360}" y="397" class="axis" text-anchor="end">{escape(peak_text)}</text>
+    {ticks}
+  </g>"""
+
+
 def render_svg(card: MetricsCard) -> str:
     commit_values = [month.commits_per_day for month in card.monthly]
     line_values = [month.lines_per_day for month in card.monthly]
@@ -677,72 +849,38 @@ def render_svg(card: MetricsCard) -> str:
     return f"""<svg width="{CARD_WIDTH}" height="{CARD_HEIGHT}" viewBox="0 0 {CARD_WIDTH} {CARD_HEIGHT}" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for {escape(card.owner)}</title>
   <desc id="desc">{card.total_commits} authored commits, {format_compact(card.total_changed)} lines changed, {card.avg_commits_per_day} commits per day, {format_compact(card.avg_lines_per_day)} lines changed per day, and language percentages by source lines of code.</desc>
-  <defs>
-    <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="44" y1="40" x2="876" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2dd4bf"/><stop offset="0.5" stop-color="#58a6ff"/><stop offset="1" stop-color="#f97316"/>
-    </linearGradient>
-    <linearGradient id="commitFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#58a6ff" stop-opacity="0.38"/><stop offset="1" stop-color="#58a6ff" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="lineFill" x1="0" y1="290" x2="0" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f97316" stop-opacity="0.42"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#020617" flood-opacity="0.48"/></filter>
-    <clipPath id="langClip"><rect x="54" y="504" width="812" height="14" rx="7"/></clipPath>
-    <style>
-      .title {{ font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }}
-      .sub {{ font: 500 13px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; }}
-      .stat {{ font: 800 28px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; }}
-      .label {{ font: 700 11px Segoe UI, Inter, Arial, sans-serif; fill: #9fb0c3; letter-spacing: .04em; }}
-      .panelTitle {{ font: 800 15px Segoe UI, Inter, Arial, sans-serif; fill: #e5edf7; }}
-      .axis {{ font: 600 10px Segoe UI, Inter, Arial, sans-serif; fill: #64748b; }}
-      .legend {{ font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #d6e2ef; }}
-      .legendPct {{ font: 800 12px Segoe UI, Inter, Arial, sans-serif; fill: #f8fafc; text-anchor: end; }}
-      .note {{ font: 700 12px Segoe UI, Inter, Arial, sans-serif; fill: #7dd3fc; }}
-      .muted {{ font: 650 12px Segoe UI, Inter, Arial, sans-serif; fill: #94a3b8; }}
-    </style>
-  </defs>
+  {render_svg_defs()}
   <rect x="16" y="16" width="888" height="608" rx="22" fill="url(#card)" stroke="#303c4d" filter="url(#shadow)"/>
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - {escape(card.period_label)} - language mix by source LOC</text>
   <text x="852" y="80" class="note" text-anchor="end">Updated {escape(card.updated_label)}</text>
 
-  {stat_box(54, card.total_commits, "COMMITS")}
-  {stat_box(260, card.avg_commits_per_day, "COMMITS / DAY")}
-  {stat_box(466, format_compact(card.avg_lines_per_day), "LINES CHANGED / DAY")}
-  {stat_box(672, card.active_days, "ACTIVE DAYS", width=194)}
+{render_svg_stats(card, net_sign, net_lines)}
 
-  <text x="54" y="232" class="muted">Repos: {card.repo_count} original ({card.public_repos} public / {card.private_repos} private)</text>
-  <text x="314" y="232" class="muted">Source LOC: {format_compact(card.source_loc)}</text>
-  <text x="484" y="232" class="muted">Added: +{format_compact(card.total_additions)}</text>
-  <text x="640" y="232" class="muted">Deleted: -{format_compact(card.total_deletions)}</text>
-  <text x="790" y="232" class="muted">Net: {net_sign}{format_compact(abs(net_lines))}</text>
+{render_chart_panel(
+      "Commits/day monthly average",
+      54,
+      f"now {latest.commits_per_day:g}",
+      commit_area,
+      "url(#commitFill)",
+      commit_line,
+      "#58a6ff",
+      f"peak {commit_max:g}",
+      commit_ticks,
+  )}
 
-  <g>
-    <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
-    <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
-    <text x="414" y="282" class="note" text-anchor="end">now {latest.commits_per_day:g}</text>
-    {chart_grid(74, 414)}
-    <path d="{commit_area}" fill="url(#commitFill)"/>
-    <path d="{commit_line}" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak {commit_max:g}</text>
-    {commit_ticks}
-  </g>
-
-  <g>
-    <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
-    <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
-    <text x="846" y="282" class="note" text-anchor="end">now {format_compact(latest.lines_per_day)}</text>
-    {chart_grid(506, 846)}
-    <path d="{changed_area}" fill="url(#lineFill)"/>
-    <path d="{changed_line}" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak {format_compact(changed_max)}</text>
-    {changed_ticks}
-  </g>
+{render_chart_panel(
+      "Lines changed/day monthly average",
+      486,
+      f"now {format_compact(latest.lines_per_day)}",
+      changed_area,
+      "url(#lineFill)",
+      changed_line,
+      "#f97316",
+      f"peak {format_compact(changed_max)}",
+      changed_ticks,
+  )}
 
   <text x="54" y="472" class="label">SOURCE LOC MIX</text>
   <text x="866" y="472" class="muted" text-anchor="end">{best_text}</text>
@@ -864,7 +1002,8 @@ def main(argv: list[str] | None = None) -> int:
         commits = fetch_commit_stats(client, owner, repositories, since)
         loc = count_source_loc_from_archives(client, owner, repositories)
 
-    card = build_card(owner, repositories, commits, loc, today=today, months=args.months)
+    config = CardConfig(owner=owner, today=today, months=args.months)
+    card = build_card(config, repositories, commits, loc)
     write_svg(Path(args.output), render_svg(card))
     print(f"wrote {args.output}")
     return 0
