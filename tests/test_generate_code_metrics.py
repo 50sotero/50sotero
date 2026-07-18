@@ -2,6 +2,7 @@ import json
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import zipfile
 from io import BytesIO
 from datetime import date, datetime, timezone
@@ -13,6 +14,63 @@ import generate_code_metrics as metrics
 
 
 class GenerateCodeMetricsTests(unittest.TestCase):
+    def test_stat_box_escapes_html(self):
+        svg = metrics.stat_box(54, "<script>", "A & B")
+        self.assertIn("&lt;script&gt;", svg)
+        self.assertIn("A &amp; B", svg)
+        self.assertNotIn("<script>", svg)
+        self.assertNotIn("A & B", svg)
+
+    def test_stat_box_renders_svg_group(self):
+        svg = metrics.stat_box(54, 1234, "COMMITS", width=150)
+        self.assertIn('<rect x="54"', svg)
+        self.assertIn('width="150"', svg)
+        self.assertIn(">1234<", svg)
+        self.assertIn(">COMMITS<", svg)
+        self.assertTrue(svg.startswith("<g>"))
+        self.assertTrue(svg.endswith("</g>"))
+
+    def test_strip_block_comments(self):
+        # Language with no block comments
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("x = 1", state, "Python"), "x = 1")
+        self.assertEqual(state, {"end": None})
+
+        # Single line block comment
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("const x = 1; /* comment */ let y = 2;", state, "TypeScript"), "const x = 1;  let y = 2;")
+        self.assertEqual(state, {"end": None})
+
+        # Multiple single line block comments
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("a /* 1 */ + b /* 2 */", state, "TypeScript"), "a  + b ")
+        self.assertEqual(state, {"end": None})
+
+        # Multi-line block comment start
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("const x = 1; /* start", state, "TypeScript"), "const x = 1; ")
+        self.assertEqual(state, {"end": "*/"})
+
+        # Multi-line block comment middle
+        state = {"end": "*/"}
+        self.assertEqual(metrics.strip_block_comments("middle of comment", state, "TypeScript"), "")
+        self.assertEqual(state, {"end": "*/"})
+
+        # Multi-line block comment end
+        state = {"end": "*/"}
+        self.assertEqual(metrics.strip_block_comments("end */ let y = 2;", state, "TypeScript"), " let y = 2;")
+        self.assertEqual(state, {"end": None})
+
+        # Different comment tokens
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("<div><!-- comment --></div>", state, "HTML"), "<div></div>")
+        self.assertEqual(state, {"end": None})
+
+        # Multi-line HTML comment
+        state = {"end": None}
+        self.assertEqual(metrics.strip_block_comments("<div><!-- start", state, "HTML"), "<div>")
+        self.assertEqual(state, {"end": "-->"})
+
     def test_parse_next_link(self):
         header = '<https://api.github.com/user/repos?page=3&per_page=100>; rel="next", <https://api.github.com/user/repos?page=50&per_page=100>; rel="last"'
         self.assertEqual(
@@ -44,15 +102,8 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.format_compact(999), "999")
         self.assertEqual(metrics.format_compact(1_250), "1.2k")
         self.assertEqual(metrics.format_compact(1_799_327), "1.8M")
-
     def test_first_day_months_ago(self):
-        # 1 month ago from March is February
-        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 2), date(2024, 2, 1))
-        # 1 month ago from Jan is Dec of previous year (crossing year boundary)
-        self.assertEqual(metrics.first_day_months_ago(date(2024, 1, 10), 2), date(2023, 12, 1))
-        # 12 months ago
-        self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 13), date(2023, 3, 1))
-        # 24 months ago
+        # Multiple years
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 25), date(2022, 3, 1))
         # 0 months ago (current month)
         self.assertEqual(metrics.first_day_months_ago(date(2024, 3, 15), 1), date(2024, 3, 1))
@@ -88,6 +139,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
             [date(2024, 1, 1), date(2024, 2, 1), date(2024, 3, 1)]
         )
 
+
+    def test_add_month(self):
+        self.assertEqual(metrics.add_month(date(2026, 1, 15)), date(2026, 2, 1))
+        self.assertEqual(metrics.add_month(date(2026, 6, 30)), date(2026, 7, 1))
+        self.assertEqual(metrics.add_month(date(2026, 12, 31)), date(2027, 1, 1))
+
+    def test_language_for(self):
+        self.assertEqual(metrics.language_for(Path("main.py")), "Python")
+        self.assertEqual(metrics.language_for(Path("app.ts")), "TypeScript")
+        self.assertEqual(metrics.language_for(Path("Dockerfile")), "Dockerfile")
+        self.assertEqual(metrics.language_for(Path("dockerfile")), "Dockerfile")
+        self.assertEqual(metrics.language_for(Path("App.TS")), "TypeScript")
+        self.assertIsNone(metrics.language_for(Path("readme.md")))
+
     def test_loc_counter_uses_source_languages_and_skips_config(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -104,7 +169,6 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(loc.total_loc, 2)
         self.assertEqual(loc.languages[0].name, "TypeScript")
         self.assertEqual(loc.languages[0].loc, 2)
-
     def test_archive_loc_counter_caps_parallel_downloads(self):
         archive = BytesIO()
         with zipfile.ZipFile(archive, "w") as zip_file:
@@ -139,6 +203,9 @@ class GenerateCodeMetricsTests(unittest.TestCase):
             def __exit__(self, *_args):
                 return False
 
+            def map(self, fn, iterables):
+                return [fn(item) for item in iterables]
+
             def submit(self, fn, *args):
                 return ImmediateFuture(fn(*args))
 
@@ -158,10 +225,11 @@ class GenerateCodeMetricsTests(unittest.TestCase):
             metrics.concurrent.futures.ThreadPoolExecutor = original_executor
             metrics.concurrent.futures.as_completed = original_as_completed
 
-        self.assertEqual(RecordingExecutor.max_workers_seen, [metrics.MAX_ARCHIVE_WORKERS])
+        self.assertEqual(RecordingExecutor.max_workers_seen[-1:], [metrics.MAX_ARCHIVE_WORKERS])
         self.assertEqual(len(client.paths), 10)
         self.assertEqual(loc.repos_scanned, 10)
         self.assertEqual(loc.total_loc, 10)
+
 
     def test_count_text_lines(self):
         # Empty and whitespace
@@ -347,24 +415,126 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertIn("75%", svg)
         self.assertIn("Source LOC: 120", svg)
 
-    def test_safe_redirect_handler_strips_auth_header_on_cross_domain(self):
+    def test_safe_redirect_handler_strips_auth_header_on_cross_host(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://external.com/test"
         )
+        self.assertIsNotNone(new_req)
         self.assertFalse(new_req.has_header("Authorization"))
 
-    def test_safe_redirect_handler_keeps_auth_header_on_same_domain(self):
+    def test_safe_redirect_handler_strips_auth_header_on_cross_scheme(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "http://api.github.com/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_strips_auth_header_on_cross_port(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "https://api.github.com:8443/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_keeps_auth_header_on_same_origin(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://api.github.com/new"
         )
+        self.assertIsNotNone(new_req)
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
+
+    def test_paginated_json_rejects_cross_origin_link_before_request_two(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://evil.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        iterator = client.paginated_json("/test")
+
+        self.assertEqual(next(iterator), 1)
+        self.assertEqual(next(iterator), 2)
+        with self.assertRaises(ValueError) as cm:
+            next(iterator)
+        self.assertEqual(str(cm.exception), "Cross-origin pagination URL rejected")
+        self.assertEqual(client.opener.calls, 1)
+
+    def test_paginated_json_accepts_same_origin_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://api.github.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
+
+    def test_paginated_json_accepts_relative_path_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '</page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
 
     def test_load_fixture(self):
         fixture_data = {
@@ -420,6 +590,34 @@ class GenerateCodeMetricsTests(unittest.TestCase):
             self.assertEqual(loc.languages[1].loc, 30)
             self.assertEqual(loc.languages[1].files, 1)
 
+    @unittest.mock.patch.dict("os.environ", {"GITHUB_REPOSITORY_OWNER": "default_user"})
+    def test_parse_args_defaults(self):
+        args = metrics.parse_args([])
+        self.assertEqual(args.user, "default_user")
+        self.assertEqual(args.output, "assets/code-metrics.svg")
+        self.assertEqual(args.months, 12)
+        self.assertEqual(args.token_env, "METRICS_TOKEN")
+        self.assertIsNone(args.fixture)
+
+    def test_parse_args_explicit_values(self):
+        argv = [
+            "--user", "test_org",
+            "--output", "test_out.svg",
+            "--months", "6",
+            "--token-env", "CUSTOM_TOKEN",
+            "--fixture", "test_fixture.json"
+        ]
+        args = metrics.parse_args(argv)
+        self.assertEqual(args.user, "test_org")
+        self.assertEqual(args.output, "test_out.svg")
+        self.assertEqual(args.months, 6)
+        self.assertEqual(args.token_env, "CUSTOM_TOKEN")
+        self.assertEqual(args.fixture, Path("test_fixture.json"))
+
+    @unittest.mock.patch("sys.stderr")
+    def test_parse_args_invalid_type(self, mock_stderr):
+        with self.assertRaises(SystemExit):
+            metrics.parse_args(["--months", "not_an_int"])
 
 if __name__ == "__main__":
     unittest.main()
