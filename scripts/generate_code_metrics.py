@@ -226,15 +226,22 @@ class MetricsCard:
     languages: list[LanguageMetric]
 
 
+
+def _is_same_origin(url1: str, url2: str) -> bool:
+    import urllib.parse
+    p1 = urllib.parse.urlparse(url1)
+    p2 = urllib.parse.urlparse(url2)
+    port1 = p1.port or (443 if p1.scheme == "https" else 80)
+    port2 = p2.port or (443 if p2.scheme == "https" else 80)
+    return p1.scheme == p2.scheme and p1.hostname == p2.hostname and port1 == port2
+
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(
         self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
     ) -> urllib.request.Request | None:
         new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new_req is not None:
-            old_host = urllib.parse.urlparse(req.full_url).hostname
-            new_host = urllib.parse.urlparse(newurl).hostname
-            if old_host != new_host and new_req.has_header("Authorization"):
+            if not _is_same_origin(req.full_url, newurl) and new_req.has_header("Authorization"):
                 new_req.remove_header("Authorization")
         return new_req
 
@@ -254,8 +261,11 @@ class GitHubClient:
 
     def request_json(self, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
         data = None if body is None else json.dumps(body).encode("utf-8")
+        url = self._url(path)
+        if not _is_same_origin(url, self.api_url):
+            raise ValueError("Cross-origin initial URL rejected")
         req = urllib.request.Request(
-            self._url(path),
+            url,
             data=data,
             headers=self.headers,
             method=method,
@@ -264,18 +274,28 @@ class GitHubClient:
             return json.loads(response.read().decode("utf-8"))
 
     def request_bytes(self, path: str) -> bytes:
-        req = urllib.request.Request(self._url(path), headers=self.headers)
+        url = self._url(path)
+        if not _is_same_origin(url, self.api_url):
+            raise ValueError("Cross-origin initial URL rejected")
+        req = urllib.request.Request(url, headers=self.headers)
         with self.opener.open(req, timeout=120) as response:
             return response.read()
 
     def paginated_json(self, path: str) -> Iterable[Any]:
         url = self._url(path)
         while url:
-            req = urllib.request.Request(url, headers=self.headers)
+            if not _is_same_origin(url, self.api_url):
+                raise ValueError("Cross-origin pagination URL rejected")
+            headers = dict(self.headers)
+            req = urllib.request.Request(url, headers=headers)
             with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
-                url = parse_next_link(response.headers.get("Link", ""))
+                next_path = parse_next_link(response.headers.get("Link", ""))
+                if next_path:
+                    url = urllib.parse.urljoin(response.geturl(), next_path)
+                else:
+                    url = None
 
     def _url(self, path: str) -> str:
         if path.startswith("http"):
@@ -676,7 +696,7 @@ def loc_metrics_from_totals(totals: dict[str, int], files: dict[str, int], repos
             percent=round((loc / total_loc) * 100, 1) if total_loc else 0.0,
             files=files.get(name, 0),
         )
-        for name, loc in sorted(totals.items(), key=lambda item: item[1], reverse=True)
+        for name, loc in sorted(totals.items(), key=lambda item: (item[1], item[0]), reverse=True)
     ]
     return LocMetrics(repos_scanned=repos_scanned, total_loc=total_loc, languages=languages)
 

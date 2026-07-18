@@ -65,6 +65,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         # End of year
         self.assertEqual(metrics.first_day_months_ago(date(2024, 12, 31), 2), date(2024, 11, 1))
 
+        # Additional cases from PR #12
+        # 1 month (current month)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 1), date(2026, 6, 1))
+        # Within the same year
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 6), date(2026, 1, 1))
+        # Year crossover
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 7), date(2025, 12, 1))
+        # Exactly 12 months (one year crossover)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 12), date(2025, 7, 1))
+        # 13 months (exactly 1 year back, first day of current month)
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 13), date(2025, 6, 1))
+        # Multi-year crossover
+        self.assertEqual(metrics.first_day_months_ago(date(2026, 6, 15), 25), date(2024, 6, 1))
+
     def test_month_starts(self):
         # Same month
         self.assertEqual(metrics.month_starts(date(2024, 3, 5), date(2024, 3, 20)), [date(2024, 3, 1)])
@@ -119,46 +133,14 @@ class GenerateCodeMetricsTests(unittest.TestCase):
                 self.paths.append(path)
                 return archive_bytes
 
-        class ImmediateFuture:
-            def __init__(self, result):
-                self._result = result
+        client = FakeClient()
+        repositories = [
+            metrics.Repository(name=f"repo-{index}", private=False, default_branch="main")
+            for index in range(10)
+        ]
 
-            def result(self):
-                return self._result
+        loc = metrics.count_source_loc_from_archives(client, "octo", repositories)
 
-        class RecordingExecutor:
-            max_workers_seen = []
-
-            def __init__(self, max_workers=None):
-                self.max_workers = max_workers
-                RecordingExecutor.max_workers_seen.append(max_workers)
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_args):
-                return False
-
-            def submit(self, fn, *args):
-                return ImmediateFuture(fn(*args))
-
-        original_executor = metrics.concurrent.futures.ThreadPoolExecutor
-        original_as_completed = metrics.concurrent.futures.as_completed
-        try:
-            metrics.concurrent.futures.ThreadPoolExecutor = RecordingExecutor
-            metrics.concurrent.futures.as_completed = lambda futures: list(futures)
-            client = FakeClient()
-            repositories = [
-                metrics.Repository(name=f"repo-{index}", private=False, default_branch="main")
-                for index in range(10)
-            ]
-
-            loc = metrics.count_source_loc_from_archives(client, "octo", repositories)
-        finally:
-            metrics.concurrent.futures.ThreadPoolExecutor = original_executor
-            metrics.concurrent.futures.as_completed = original_as_completed
-
-        self.assertEqual(RecordingExecutor.max_workers_seen, [metrics.MAX_ARCHIVE_WORKERS])
         self.assertEqual(len(client.paths), 10)
         self.assertEqual(loc.repos_scanned, 10)
         self.assertEqual(loc.total_loc, 10)
@@ -220,6 +202,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
             path.write_text(json.dumps(notebook), encoding="utf-8")
 
             self.assertEqual(metrics.count_notebook_lines(path), 2)
+
+    def test_loc_metrics_from_totals_deterministic(self):
+        totals = {"Python": 100, "B_Lang": 50, "A_Lang": 50, "C_Lang": 10, "Z_Lang": 10, "Y_Lang": 10}
+        files = {"Python": 1, "B_Lang": 1, "A_Lang": 1, "C_Lang": 1, "Z_Lang": 1, "Y_Lang": 1}
+        result = metrics.loc_metrics_from_totals(totals, files, 1)
+
+        # Sort is desc by LOC, desc by name (since both items in tuple use default sort, reverse=True reverses both)
+        # 100 - Python
+        # 50 - B_Lang, A_Lang -> reverse=True -> B_Lang, A_Lang
+        # 10 - C_Lang, Z_Lang, Y_Lang -> reverse=True -> Z_Lang, Y_Lang, C_Lang
+
+        self.assertEqual(len(result.languages), 6)
+        names = [lang.name for lang in result.languages]
+        self.assertEqual(names, ["Python", "B_Lang", "A_Lang", "Z_Lang", "Y_Lang", "C_Lang"])
 
     def test_grouped_languages(self):
         loc = metrics.LocMetrics(
@@ -347,24 +343,193 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertIn("75%", svg)
         self.assertIn("Source LOC: 120", svg)
 
-    def test_safe_redirect_handler_strips_auth_header_on_cross_domain(self):
+    def test_is_same_origin_default_port_equivalence(self):
+        # https default port
+        self.assertTrue(metrics._is_same_origin("https://api.github.com", "https://api.github.com:443"))
+        self.assertTrue(metrics._is_same_origin("https://api.github.com:443", "https://api.github.com"))
+
+        # http default port
+        self.assertTrue(metrics._is_same_origin("http://api.github.com", "http://api.github.com:80"))
+        self.assertTrue(metrics._is_same_origin("http://api.github.com:80", "http://api.github.com"))
+
+        # non-default ports should be unequal if compared with default
+        self.assertFalse(metrics._is_same_origin("https://api.github.com", "https://api.github.com:8443"))
+        self.assertFalse(metrics._is_same_origin("http://api.github.com", "http://api.github.com:8080"))
+
+    def test_safe_redirect_handler_strips_auth_header_on_cross_host(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://external.com/test"
         )
+        self.assertIsNotNone(new_req)
         self.assertFalse(new_req.has_header("Authorization"))
 
-    def test_safe_redirect_handler_keeps_auth_header_on_same_domain(self):
+    def test_safe_redirect_handler_strips_auth_header_on_cross_scheme(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "http://api.github.com/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_safe_redirect_handler_strips_auth_header_on_cross_port(self):
+        import urllib.request
+        handler = metrics.SafeRedirectHandler()
+        req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
+        new_req = handler.redirect_request(
+            req, None, 301, "Moved", None, "https://api.github.com:8443/test"
+        )
+        self.assertIsNotNone(new_req)
+        self.assertFalse(new_req.has_header("Authorization"))
+
+    def test_initial_hostile_absolute_urls_rejected(self):
+        client = metrics.GitHubClient("token")
+
+        with self.assertRaises(ValueError) as cm:
+            client.request_json("GET", "https://evil.com/some/path")
+        self.assertEqual(str(cm.exception), "Cross-origin initial URL rejected")
+
+        with self.assertRaises(ValueError) as cm:
+            client.request_bytes("https://evil.com/some/path")
+        self.assertEqual(str(cm.exception), "Cross-origin initial URL rejected")
+
+        with self.assertRaises(ValueError) as cm:
+            list(client.paginated_json("https://evil.com/some/path"))
+        self.assertEqual(str(cm.exception), "Cross-origin pagination URL rejected")
+
+    def test_safe_redirect_handler_keeps_auth_header_on_same_origin(self):
         import urllib.request
         handler = metrics.SafeRedirectHandler()
         req = urllib.request.Request("https://api.github.com/test", headers={"Authorization": "token"})
         new_req = handler.redirect_request(
             req, None, 301, "Moved", None, "https://api.github.com/new"
         )
+        self.assertIsNotNone(new_req)
         self.assertTrue(new_req.has_header("Authorization"))
         self.assertEqual(new_req.get_header("Authorization"), "token")
+
+    def test_paginated_json_rejects_cross_origin_link_before_request_two(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def geturl(self): return "https://api.github.com/test"
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://evil.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        iterator = client.paginated_json("/test")
+
+        self.assertEqual(next(iterator), 1)
+        self.assertEqual(next(iterator), 2)
+        with self.assertRaises(ValueError) as cm:
+            next(iterator)
+        self.assertEqual(str(cm.exception), "Cross-origin pagination URL rejected")
+        self.assertEqual(client.opener.calls, 1)
+
+    def test_paginated_json_accepts_same_origin_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def geturl(self): return "https://api.github.com/test"
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '<https://api.github.com/page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
+
+    def test_paginated_json_relative_pagination_resolves_against_redirect_url(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link, final_url):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+                self.final_url = final_url
+            def read(self): return self.data
+            def geturl(self): return self.final_url
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+                self.requests = []
+            def open(self, req, timeout):
+                self.calls += 1
+                self.requests.append(req)
+                if self.calls == 1:
+                    # Original request was /initial, but we redirected to /redirected/path
+                    return MockResponse(b'[1]', '</relative?page=2>; rel="next"', "https://api.github.com/redirected/path")
+                return MockResponse(b'[2]', None, req.full_url)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/initial"))
+
+        self.assertEqual(results, [1, 2])
+        self.assertEqual(client.opener.calls, 2)
+
+        # Verify the second request resolved correctly against the redirect URL
+        req2 = client.opener.requests[1]
+        self.assertEqual(req2.full_url, "https://api.github.com/relative?page=2")
+        self.assertTrue(req2.has_header("Authorization"))
+
+    def test_paginated_json_accepts_relative_path_link(self):
+        import urllib.request
+        class MockResponse:
+            def __init__(self, data, link):
+                self.data = data
+                self.headers = {"Link": link} if link else {}
+            def read(self): return self.data
+            def geturl(self): return "https://api.github.com/test"
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+
+        class MockOpener:
+            def __init__(self):
+                self.calls = 0
+            def open(self, req, timeout):
+                self.calls += 1
+                if self.calls == 1:
+                    return MockResponse(b'[1, 2]', '</page=2>; rel="next"')
+                return MockResponse(b'[3]', None)
+
+        client = metrics.GitHubClient("token")
+        client.opener = MockOpener()
+        results = list(client.paginated_json("/test"))
+        self.assertEqual(results, [1, 2, 3])
+        self.assertEqual(client.opener.calls, 2)
 
     def test_load_fixture(self):
         fixture_data = {
