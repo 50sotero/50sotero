@@ -226,16 +226,25 @@ class MetricsCard:
     languages: list[LanguageMetric]
 
 
+def _get_origin(url: str) -> tuple[str, str, int]:
+    parsed = urllib.parse.urlparse(url)
+    scheme = parsed.scheme.lower()
+    host = (parsed.hostname or "").lower()
+    port = parsed.port
+    if port is None:
+        port = 443 if scheme == "https" else (80 if scheme == "http" else 0)
+    return (scheme, host, port)
+
+
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(
         self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
     ) -> urllib.request.Request | None:
         new_req = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new_req is not None:
-            old_host = urllib.parse.urlparse(req.full_url).hostname
-            new_host = urllib.parse.urlparse(newurl).hostname
-            if old_host != new_host and new_req.has_header("Authorization"):
-                new_req.remove_header("Authorization")
+            if _get_origin(req.full_url) != _get_origin(newurl):
+                if new_req.has_header("Authorization"):
+                    new_req.remove_header("Authorization")
         return new_req
 
 
@@ -254,8 +263,10 @@ class GitHubClient:
 
     def request_json(self, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
         data = None if body is None else json.dumps(body).encode("utf-8")
+        url = self._url(path)
+        self._require_api_origin(url, context="initial URL")
         req = urllib.request.Request(
-            self._url(path),
+            url,
             data=data,
             headers=self.headers,
             method=method,
@@ -264,23 +275,33 @@ class GitHubClient:
             return json.loads(response.read().decode("utf-8"))
 
     def request_bytes(self, path: str) -> bytes:
-        req = urllib.request.Request(self._url(path), headers=self.headers)
+        url = self._url(path)
+        self._require_api_origin(url, context="initial URL")
+        req = urllib.request.Request(url, headers=self.headers)
         with self.opener.open(req, timeout=120) as response:
             return response.read()
 
     def paginated_json(self, path: str) -> Iterable[Any]:
         url = self._url(path)
         while url:
+            self._require_api_origin(url, context="pagination URL")
             req = urllib.request.Request(url, headers=self.headers)
             with self.opener.open(req, timeout=60) as response:
                 items = json.loads(response.read().decode("utf-8"))
                 yield from items
-                url = parse_next_link(response.headers.get("Link", ""))
+                next_url = parse_next_link(response.headers.get("Link", ""))
+                if not next_url:
+                    break
+                url = urllib.parse.urljoin(response.geturl(), next_url)
 
     def _url(self, path: str) -> str:
         if path.startswith("http"):
             return path
         return f"{self.api_url}/{path.lstrip('/')}"
+
+    def _require_api_origin(self, url: str, *, context: str) -> None:
+        if _get_origin(url) != _get_origin(self.api_url):
+            raise ValueError(f"Cross-origin {context} rejected")
 
 
 def parse_next_link(link_header: str) -> str | None:
@@ -599,6 +620,43 @@ def count_source_loc(paths: Iterable[Path]) -> LocMetrics:
     return loc_metrics_from_totals(totals, files, repos_scanned)
 
 
+def _process_zip_member(zip_file: zipfile.ZipFile, member: zipfile.ZipInfo) -> tuple[str, int] | None:
+    if member.is_dir():
+        return None
+    path = PurePosixPath(member.filename)
+    relative_parts = path.parts[1:] if len(path.parts) > 1 else path.parts
+    relative = PurePosixPath(*relative_parts)
+    if should_skip(relative):
+        return None
+    lang = language_for(relative)
+    if not lang:
+        return None
+
+    if member.file_size > MAX_FILE_SIZE:
+        return None
+
+    try:
+        with zip_file.open(member) as f:
+            raw = f.read(MAX_FILE_SIZE + 1)
+            if len(raw) > MAX_FILE_SIZE:
+                return None
+    except zipfile.BadZipFile:
+        return None
+
+    if lang == "Jupyter Notebook":
+        try:
+            data = json.loads(raw.decode("utf-8", errors="ignore"))
+        except json.JSONDecodeError:
+            return None
+        loc = count_notebook_data(data)
+    else:
+        loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
+    if loc <= 0:
+        return None
+
+    return lang, loc
+
+
 def count_source_loc_from_archives(
     client: GitHubClient,
     owner: str,
@@ -614,40 +672,11 @@ def count_source_loc_from_archives(
         repo_files: dict[str, int] = {}
         with zipfile.ZipFile(io.BytesIO(archive)) as zip_file:
             for member in zip_file.infolist():
-                if member.is_dir():
-                    continue
-                path = PurePosixPath(member.filename)
-                relative_parts = path.parts[1:] if len(path.parts) > 1 else path.parts
-                relative = PurePosixPath(*relative_parts)
-                if should_skip(relative):
-                    continue
-                lang = language_for(relative)
-                if not lang:
-                    continue
-
-                if member.file_size > MAX_FILE_SIZE:
-                    continue
-
-                try:
-                    with zip_file.open(member) as f:
-                        raw = f.read(MAX_FILE_SIZE + 1)
-                        if len(raw) > MAX_FILE_SIZE:
-                            continue
-                except zipfile.BadZipFile:
-                    continue
-
-                if lang == "Jupyter Notebook":
-                    try:
-                        data = json.loads(raw.decode("utf-8", errors="ignore"))
-                    except json.JSONDecodeError:
-                        continue
-                    loc = count_notebook_data(data)
-                else:
-                    loc = count_text_lines(raw.decode("utf-8", errors="ignore"), lang)
-                if loc <= 0:
-                    continue
-                repo_totals[lang] = repo_totals.get(lang, 0) + loc
-                repo_files[lang] = repo_files.get(lang, 0) + 1
+                result = _process_zip_member(zip_file, member)
+                if result:
+                    lang, loc = result
+                    repo_totals[lang] = repo_totals.get(lang, 0) + loc
+                    repo_files[lang] = repo_files.get(lang, 0) + 1
         return repo_totals, repo_files
 
     if not repositories:
@@ -655,9 +684,7 @@ def count_source_loc_from_archives(
 
     max_workers = min(MAX_ARCHIVE_WORKERS, len(repositories))
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(_process_repo, repo): repo for repo in repositories}
-        for future in concurrent.futures.as_completed(futures):
-            repo_totals, repo_files = future.result()
+        for repo_totals, repo_files in executor.map(_process_repo, repositories):
             repos_scanned += 1
             for lang, loc in repo_totals.items():
                 totals[lang] = totals.get(lang, 0) + loc
@@ -676,7 +703,7 @@ def loc_metrics_from_totals(totals: dict[str, int], files: dict[str, int], repos
             percent=round((loc / total_loc) * 100, 1) if total_loc else 0.0,
             files=files.get(name, 0),
         )
-        for name, loc in sorted(totals.items(), key=lambda item: item[1], reverse=True)
+        for name, loc in sorted(totals.items(), key=lambda item: (-item[1], item[0].casefold(), item[0]))
     ]
     return LocMetrics(repos_scanned=repos_scanned, total_loc=total_loc, languages=languages)
 
