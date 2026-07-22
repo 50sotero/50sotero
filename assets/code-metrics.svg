@@ -1,6 +1,6 @@
 <svg width="920" height="640" viewBox="0 0 920 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for 50sotero</title>
-  <desc id="desc">101 authored commits, 57.1k lines changed, 0.28 commits per day, 161 lines changed per day, and language percentages by source lines of code.</desc>
+  <desc id="desc">101 authored commits, 57.1k lines changed, 0.28 commits per day, 160 lines changed per day, and language percentages by source lines of code.</desc>
   <defs>
     <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
@@ -33,7 +33,7 @@
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Aug 2025-Jul 2026 - language mix by source LOC</text>
-  <text x="852" y="80" class="note" text-anchor="end">Updated Jul 21, 2026</text>
+  <text x="852" y="80" class="note" text-anchor="end">Updated Jul 22, 2026</text>
 
   <g>
     <rect x="54" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -45,7 +45,7 @@
   </g>
   <g>
     <rect x="466" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
-    <text x="486" y="161" class="stat">161</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
+    <text x="486" y="161" class="stat">160</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
   </g>
   <g>
     <rect x="672" y="128" width="194" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -61,10 +61,10 @@
   <g>
     <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
-    <text x="414" y="282" class="note" text-anchor="end">now 0.57</text>
+    <text x="414" y="282" class="note" text-anchor="end">now 0.55</text>
     <line x1="74" y1="298" x2="414" y2="298" stroke="#263244"/><line x1="74" y1="341" x2="414" y2="341" stroke="#263244"/><line x1="74" y1="384" x2="414" y2="384" stroke="#263244"/>
-    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 384.0 L 228.5 359.0 L 259.5 380.9 L 290.4 356.6 L 321.3 298.0 L 352.2 371.5 L 383.1 308.2 L 414.0 339.4 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
-    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 384.0 L 228.5 359.0 L 259.5 380.9 L 290.4 356.6 L 321.3 298.0 L 352.2 371.5 L 383.1 308.2 L 414.0 339.4" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 384.0 L 228.5 359.0 L 259.5 380.9 L 290.4 356.6 L 321.3 298.0 L 352.2 371.5 L 383.1 308.2 L 414.0 341.0 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
+    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 384.0 L 228.5 359.0 L 259.5 380.9 L 290.4 356.6 L 321.3 298.0 L 352.2 371.5 L 383.1 308.2 L 414.0 341.0" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak 1.1</text>
     <text x="74.0" y="410" class="axis" text-anchor="middle">Aug</text>
     <text x="135.8" y="410" class="axis" text-anchor="middle">Oct</text>
@@ -78,10 +78,10 @@
   <g>
     <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
-    <text x="846" y="282" class="note" text-anchor="end">now 690</text>
+    <text x="846" y="282" class="note" text-anchor="end">now 659</text>
     <line x1="506" y1="298" x2="846" y2="298" stroke="#263244"/><line x1="506" y1="341" x2="846" y2="341" stroke="#263244"/><line x1="506" y1="384" x2="846" y2="384" stroke="#263244"/>
-    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 384.0 L 660.5 298.0 L 691.5 377.6 L 722.4 367.5 L 753.3 352.5 L 784.2 372.6 L 815.1 376.5 L 846.0 304.9 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
-    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 384.0 L 660.5 298.0 L 691.5 377.6 L 722.4 367.5 L 753.3 352.5 L 784.2 372.6 L 815.1 376.5 L 846.0 304.9" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 384.0 L 660.5 298.0 L 691.5 377.6 L 722.4 367.5 L 753.3 352.5 L 784.2 372.6 L 815.1 376.5 L 846.0 308.4 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
+    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 384.0 L 660.5 298.0 L 691.5 377.6 L 722.4 367.5 L 753.3 352.5 L 784.2 372.6 L 815.1 376.5 L 846.0 308.4" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak 750</text>
     <text x="506.0" y="410" class="axis" text-anchor="middle">Aug</text>
     <text x="567.8" y="410" class="axis" text-anchor="middle">Oct</text>
