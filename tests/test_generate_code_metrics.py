@@ -321,6 +321,19 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(other.percent, 20.0)
         self.assertEqual(other.files, 3)
 
+    def test_process_zip_member_directory_traversal(self):
+        from zipfile import ZipInfo
+        import zipfile
+
+        member1 = ZipInfo("../../etc/passwd")
+        self.assertIsNone(metrics._process_zip_member(None, member1))
+
+        member2 = ZipInfo("/etc/passwd")
+        self.assertIsNone(metrics._process_zip_member(None, member2))
+
+        member3 = ZipInfo("repo/../etc/passwd")
+        self.assertIsNone(metrics._process_zip_member(None, member3))
+
     def test_should_skip(self):
         from pathlib import Path, PurePosixPath
 
