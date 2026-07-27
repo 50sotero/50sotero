@@ -624,6 +624,8 @@ def _process_zip_member(zip_file: zipfile.ZipFile, member: zipfile.ZipInfo) -> t
     if member.is_dir():
         return None
     path = PurePosixPath(member.filename)
+    if path.is_absolute() or ".." in path.parts:
+        return None
     relative_parts = path.parts[1:] if len(path.parts) > 1 else path.parts
     relative = PurePosixPath(*relative_parts)
     if should_skip(relative):
