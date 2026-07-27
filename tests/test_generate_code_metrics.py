@@ -289,6 +289,25 @@ class GenerateCodeMetricsTests(unittest.TestCase):
 
             self.assertEqual(metrics.count_notebook_lines(path), 2)
 
+    def test_count_notebook_source_edge_cases(self):
+        # String input
+        self.assertEqual(metrics.count_notebook_source("x = 1\ny = 2\n# comment"), 2)
+
+        # List of strings input
+        self.assertEqual(metrics.count_notebook_source(["x = 1\n", "y = 2\n", "# comment\n"]), 2)
+
+        # None input
+        self.assertEqual(metrics.count_notebook_source(None), 0)
+
+        # Empty list input
+        self.assertEqual(metrics.count_notebook_source([]), 0)
+
+        # List of non-strings (fallback string conversion)
+        self.assertEqual(metrics.count_notebook_source([123, 456.78]), 2)
+
+        # Mixed whitespace and empty lines
+        self.assertEqual(metrics.count_notebook_source(["\n", "  \n", "\t\n"]), 0)
+
     def test_grouped_languages(self):
         loc = metrics.LocMetrics(
             repos_scanned=1,
