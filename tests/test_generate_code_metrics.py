@@ -710,6 +710,31 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(args.token_env, "CUSTOM_TOKEN")
         self.assertEqual(args.fixture, Path("test_fixture.json"))
 
+    def test_days_in_period_month(self):
+        # 1. Period completely covering the month
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2022, 12, 1), date(2023, 2, 28)), 31)
+
+        # 2. Period starting in the middle of the month and extending beyond it
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2023, 1, 15), date(2023, 2, 15)), 17)
+
+        # 3. Period starting before the month and ending in the middle
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2022, 12, 15), date(2023, 1, 15)), 15)
+
+        # 4. Period entirely contained within the month
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2023, 1, 10), date(2023, 1, 20)), 11)
+
+        # 5. Period entirely before the month
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2022, 11, 1), date(2022, 12, 31)), 0)
+
+        # 6. Period entirely after the month
+        self.assertEqual(metrics.days_in_period_month(date(2023, 1, 1), date(2023, 2, 1), date(2023, 3, 1)), 0)
+
+        # 7. Leap year for February (e.g., month of Feb 2024 -> 29 days vs Feb 2023 -> 28 days)
+        # Period covers the whole month of Feb 2024
+        self.assertEqual(metrics.days_in_period_month(date(2024, 2, 1), date(2024, 1, 1), date(2024, 3, 1)), 29)
+        # Period covers the whole month of Feb 2023
+        self.assertEqual(metrics.days_in_period_month(date(2023, 2, 1), date(2023, 1, 1), date(2023, 3, 1)), 28)
+
     @unittest.mock.patch("sys.stderr")
     def test_parse_args_invalid_type(self, mock_stderr):
         with self.assertRaises(SystemExit):
