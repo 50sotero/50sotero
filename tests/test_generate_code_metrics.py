@@ -30,6 +30,28 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertTrue(svg.startswith("<g>"))
         self.assertTrue(svg.endswith("</g>"))
 
+    def test_line_path_single_value(self):
+        line, area, max_val = metrics.line_path([10.0], 0, 0, 100, 100)
+        self.assertEqual(line, "M 0.0 0.0")
+        self.assertEqual(area, "M 0.0 0.0 L 0.0 100 L 0.0 100 Z")
+        self.assertEqual(max_val, 10.0)
+
+    def test_line_path_multiple_values(self):
+        line, area, max_val = metrics.line_path([0.0, 5.0, 10.0], 0, 0, 100, 100)
+        self.assertEqual(line, "M 0.0 100.0 L 50.0 50.0 L 100.0 0.0")
+        self.assertEqual(area, "M 0.0 100.0 L 50.0 50.0 L 100.0 0.0 L 100.0 100 L 0.0 100 Z")
+        self.assertEqual(max_val, 10.0)
+
+    def test_line_path_max_value(self):
+        line, area, max_val = metrics.line_path([0.5], 0, 0, 100, 100)
+        self.assertEqual(line, "M 0.0 50.0")
+        self.assertEqual(area, "M 0.0 50.0 L 0.0 100 L 0.0 100 Z")
+        self.assertEqual(max_val, 1)
+
+    def test_line_path_empty_values(self):
+        with self.assertRaises(IndexError):
+            metrics.line_path([], 0, 0, 100, 100)
+
     def test_strip_block_comments(self):
         # Language with no block comments
         state = {"end": None}
