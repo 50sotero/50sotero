@@ -353,6 +353,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         member3 = ZipInfo("repo/../etc/passwd")
         self.assertIsNone(metrics._process_zip_member(None, member3))
 
+    def test_process_zip_member_badzipfile(self):
+        from zipfile import ZipInfo, BadZipFile
+        from unittest.mock import MagicMock
+
+        mock_zip = MagicMock()
+        mock_zip.open.side_effect = BadZipFile
+
+        member = ZipInfo("repo/main.py")
+        member.file_size = 100
+
+        # We need language_for to return something, so we provide an extension that is recognized.
+        # "repo/main.py" corresponds to Python.
+        self.assertIsNone(metrics._process_zip_member(mock_zip, member))
+
     def test_should_skip(self):
         from pathlib import Path, PurePosixPath
 
