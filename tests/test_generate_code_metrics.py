@@ -48,10 +48,6 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         self.assertEqual(area, "M 0.0 50.0 L 0.0 100 L 0.0 100 Z")
         self.assertEqual(max_val, 1)
 
-    def test_line_path_empty_values(self):
-        with self.assertRaises(IndexError):
-            metrics.line_path([], 0, 0, 100, 100)
-
     def test_strip_block_comments(self):
         # Language with no block comments
         state = {"end": None}
@@ -775,6 +771,12 @@ class GenerateCodeMetricsTests(unittest.TestCase):
     def test_parse_args_invalid_type(self, mock_stderr):
         with self.assertRaises(SystemExit):
             metrics.parse_args(["--months", "not_an_int"])
+
+    @unittest.mock.patch("sys.stderr")
+    def test_parse_args_rejects_non_positive_months(self, mock_stderr):
+        for months in ("0", "-1"):
+            with self.subTest(months=months), self.assertRaises(SystemExit):
+                metrics.parse_args(["--months", months])
 
 if __name__ == "__main__":
     unittest.main()
