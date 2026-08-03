@@ -995,7 +995,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--months", type=int, default=12, help="Number of months to include.")
     parser.add_argument("--token-env", default="METRICS_TOKEN", help="Primary token environment variable.")
     parser.add_argument("--fixture", type=Path, help="Use fixture JSON instead of calling GitHub.")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.months < 1:
+        parser.error("--months must be at least 1")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
