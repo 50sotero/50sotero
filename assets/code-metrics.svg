@@ -33,7 +33,7 @@
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Sep 2025-Aug 2026 - language mix by source LOC</text>
-  <text x="852" y="80" class="note" text-anchor="end">Updated Aug 7, 2026</text>
+  <text x="852" y="80" class="note" text-anchor="end">Updated Aug 8, 2026</text>
 
   <g>
     <rect x="54" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -61,10 +61,10 @@
   <g>
     <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
-    <text x="414" y="282" class="note" text-anchor="end">now 0.43</text>
+    <text x="414" y="282" class="note" text-anchor="end">now 0.38</text>
     <line x1="74" y1="298" x2="414" y2="298" stroke="#263244"/><line x1="74" y1="341" x2="414" y2="341" stroke="#263244"/><line x1="74" y1="384" x2="414" y2="384" stroke="#263244"/>
-    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 359.0 L 228.5 380.9 L 259.5 356.6 L 290.4 298.0 L 321.3 371.5 L 352.2 308.2 L 383.1 343.3 L 414.0 350.4 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
-    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 359.0 L 228.5 380.9 L 259.5 356.6 L 290.4 298.0 L 321.3 371.5 L 352.2 308.2 L 383.1 343.3 L 414.0 350.4" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 359.0 L 228.5 380.9 L 259.5 356.6 L 290.4 298.0 L 321.3 371.5 L 352.2 308.2 L 383.1 343.3 L 414.0 354.3 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
+    <path d="M 74.0 384.0 L 104.9 384.0 L 135.8 384.0 L 166.7 384.0 L 197.6 359.0 L 228.5 380.9 L 259.5 356.6 L 290.4 298.0 L 321.3 371.5 L 352.2 308.2 L 383.1 343.3 L 414.0 354.3" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak 1.1</text>
     <text x="74.0" y="410" class="axis" text-anchor="middle">Sep</text>
     <text x="135.8" y="410" class="axis" text-anchor="middle">Nov</text>
@@ -78,10 +78,10 @@
   <g>
     <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
-    <text x="846" y="282" class="note" text-anchor="end">now 10</text>
+    <text x="846" y="282" class="note" text-anchor="end">now 8</text>
     <line x1="506" y1="298" x2="846" y2="298" stroke="#263244"/><line x1="506" y1="341" x2="846" y2="341" stroke="#263244"/><line x1="506" y1="384" x2="846" y2="384" stroke="#263244"/>
-    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 298.0 L 660.5 377.6 L 691.5 367.5 L 722.4 352.5 L 753.3 372.6 L 784.2 376.5 L 815.1 315.8 L 846.0 382.9 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
-    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 298.0 L 660.5 377.6 L 691.5 367.5 L 722.4 352.5 L 753.3 372.6 L 784.2 376.5 L 815.1 315.8 L 846.0 382.9" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 298.0 L 660.5 377.6 L 691.5 367.5 L 722.4 352.5 L 753.3 372.6 L 784.2 376.5 L 815.1 315.8 L 846.0 383.1 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
+    <path d="M 506.0 384.0 L 536.9 384.0 L 567.8 384.0 L 598.7 384.0 L 629.6 298.0 L 660.5 377.6 L 691.5 367.5 L 722.4 352.5 L 753.3 372.6 L 784.2 376.5 L 815.1 315.8 L 846.0 383.1" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak 750</text>
     <text x="506.0" y="410" class="axis" text-anchor="middle">Sep</text>
     <text x="567.8" y="410" class="axis" text-anchor="middle">Nov</text>
