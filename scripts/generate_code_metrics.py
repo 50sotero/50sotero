@@ -583,7 +583,7 @@ def count_notebook_data(data: dict[str, Any]) -> int:
 
 
 def should_skip(path: PurePosixPath | Path) -> bool:
-    return any(part in SKIP_DIRS for part in path.parts)
+    return not SKIP_DIRS.isdisjoint(path.parts)
 
 
 def count_source_loc(paths: Iterable[Path]) -> LocMetrics:
