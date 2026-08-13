@@ -385,6 +385,20 @@ class GenerateCodeMetricsTests(unittest.TestCase):
         # "repo/main.py" corresponds to Python.
         self.assertIsNone(metrics._process_zip_member(mock_zip, member))
 
+    def test_process_zip_member_json_decode_error(self):
+        from zipfile import ZipInfo
+        from unittest.mock import MagicMock
+
+        mock_zip = MagicMock()
+        mock_file = MagicMock()
+        mock_file.read.return_value = b"{"
+        mock_zip.open.return_value.__enter__.return_value = mock_file
+
+        member = ZipInfo("repo/notebook.ipynb")
+        member.file_size = 100
+
+        self.assertIsNone(metrics._process_zip_member(mock_zip, member))
+
     def test_should_skip(self):
         from pathlib import Path, PurePosixPath
 
