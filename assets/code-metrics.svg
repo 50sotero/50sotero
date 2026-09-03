@@ -33,7 +33,7 @@
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Oct 2025-Sep 2026 - language mix by source LOC</text>
-  <text x="852" y="80" class="note" text-anchor="end">Updated Sep 2, 2026</text>
+  <text x="852" y="80" class="note" text-anchor="end">Updated Sep 3, 2026</text>
 
   <g>
     <rect x="54" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
