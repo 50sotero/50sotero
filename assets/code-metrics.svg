@@ -1,6 +1,6 @@
 <svg width="920" height="640" viewBox="0 0 920 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for 50sotero</title>
-  <desc id="desc">110 authored commits, 61.1k lines changed, 0.32 commits per day, 180 lines changed per day, and language percentages by source lines of code.</desc>
+  <desc id="desc">110 authored commits, 61.1k lines changed, 0.32 commits per day, 179 lines changed per day, and language percentages by source lines of code.</desc>
   <defs>
     <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
@@ -33,7 +33,7 @@
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Oct 2025-Sep 2026 - language mix by source LOC</text>
-  <text x="852" y="80" class="note" text-anchor="end">Updated Sep 5, 2026</text>
+  <text x="852" y="80" class="note" text-anchor="end">Updated Sep 6, 2026</text>
 
   <g>
     <rect x="54" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -45,7 +45,7 @@
   </g>
   <g>
     <rect x="466" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
-    <text x="486" y="161" class="stat">180</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
+    <text x="486" y="161" class="stat">179</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
   </g>
   <g>
     <rect x="672" y="128" width="194" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
