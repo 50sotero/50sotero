@@ -1,6 +1,6 @@
 <svg width="920" height="640" viewBox="0 0 920 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Private-inclusive GitHub code velocity metrics for 50sotero</title>
-  <desc id="desc">160 authored commits, 241.2k lines changed, 0.47 commits per day, 701 lines changed per day, and language percentages by source lines of code.</desc>
+  <desc id="desc">162 authored commits, 241.6k lines changed, 0.47 commits per day, 700 lines changed per day, and language percentages by source lines of code.</desc>
   <defs>
     <linearGradient id="card" x1="0" y1="0" x2="920" y2="640" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#08111f"/><stop offset="0.55" stop-color="#101827"/><stop offset="1" stop-color="#16111f"/>
@@ -33,11 +33,11 @@
   <rect x="44" y="40" width="832" height="4" rx="2" fill="url(#accent)"/>
   <text x="54" y="80" class="title">Code velocity</text>
   <text x="54" y="103" class="sub">Private-inclusive GitHub API snapshot - Dec 2025-Nov 2026 - language mix by source LOC</text>
-  <text x="852" y="80" class="note" text-anchor="end">Updated Nov 9, 2026</text>
+  <text x="852" y="80" class="note" text-anchor="end">Updated Nov 10, 2026</text>
 
   <g>
     <rect x="54" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
-    <text x="74" y="161" class="stat">160</text><text x="74" y="184" class="label">COMMITS</text>
+    <text x="74" y="161" class="stat">162</text><text x="74" y="184" class="label">COMMITS</text>
   </g>
   <g>
     <rect x="260" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -45,7 +45,7 @@
   </g>
   <g>
     <rect x="466" y="128" width="190" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
-    <text x="486" y="161" class="stat">701</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
+    <text x="486" y="161" class="stat">700</text><text x="486" y="184" class="label">LINES CHANGED / DAY</text>
   </g>
   <g>
     <rect x="672" y="128" width="194" height="74" rx="14" fill="#151c28" stroke="#2a3544"/>
@@ -53,19 +53,19 @@
   </g>
 
   <text x="54" y="232" class="muted">Repos: 29 original (29 public / 0 private)</text>
-  <text x="314" y="232" class="muted">Source LOC: 201k</text>
-  <text x="484" y="232" class="muted">Added: +232.8k</text>
+  <text x="314" y="232" class="muted">Source LOC: 201.2k</text>
+  <text x="484" y="232" class="muted">Added: +233.2k</text>
   <text x="640" y="232" class="muted">Deleted: -8.4k</text>
-  <text x="790" y="232" class="muted">Net: +224.4k</text>
+  <text x="790" y="232" class="muted">Net: +224.8k</text>
 
   <g>
     <rect x="54" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="74" y="282" class="panelTitle">Commits/day monthly average</text>
-    <text x="414" y="282" class="note" text-anchor="end">now 2.22</text>
+    <text x="414" y="282" class="note" text-anchor="end">now 2.2</text>
     <line x1="74" y1="298" x2="414" y2="298" stroke="#263244"/><line x1="74" y1="341" x2="414" y2="341" stroke="#263244"/><line x1="74" y1="384" x2="414" y2="384" stroke="#263244"/>
-    <path d="M 74.0 384.0 L 104.9 371.6 L 135.8 382.5 L 166.7 370.4 L 197.6 341.4 L 228.5 377.8 L 259.5 346.4 L 290.4 363.9 L 321.3 377.8 L 352.2 380.1 L 383.1 350.3 L 414.0 298.0 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
-    <path d="M 74.0 384.0 L 104.9 371.6 L 135.8 382.5 L 166.7 370.4 L 197.6 341.4 L 228.5 377.8 L 259.5 346.4 L 290.4 363.9 L 321.3 377.8 L 352.2 380.1 L 383.1 350.3 L 414.0 298.0" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak 2.22</text>
+    <path d="M 74.0 384.0 L 104.9 371.5 L 135.8 382.4 L 166.7 370.3 L 197.6 341.0 L 228.5 377.7 L 259.5 346.1 L 290.4 363.7 L 321.3 377.7 L 352.2 380.1 L 383.1 350.0 L 414.0 298.0 L 414.0 384 L 74.0 384 Z" fill="url(#commitFill)"/>
+    <path d="M 74.0 384.0 L 104.9 371.5 L 135.8 382.4 L 166.7 370.3 L 197.6 341.0 L 228.5 377.7 L 259.5 346.1 L 290.4 363.7 L 321.3 377.7 L 352.2 380.1 L 383.1 350.0 L 414.0 298.0" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="74" y="397" class="axis">0</text><text x="414" y="397" class="axis" text-anchor="end">peak 2.2</text>
     <text x="74.0" y="410" class="axis" text-anchor="middle">Dec</text>
     <text x="135.8" y="410" class="axis" text-anchor="middle">Feb</text>
     <text x="197.6" y="410" class="axis" text-anchor="middle">Apr</text>
@@ -78,11 +78,11 @@
   <g>
     <rect x="486" y="256" width="390" height="172" rx="16" fill="#0f1724" stroke="#253246"/>
     <text x="506" y="282" class="panelTitle">Lines changed/day monthly average</text>
-    <text x="846" y="282" class="note" text-anchor="end">now 5.3k</text>
+    <text x="846" y="282" class="note" text-anchor="end">now 4.8k</text>
     <line x1="506" y1="298" x2="846" y2="298" stroke="#263244"/><line x1="506" y1="341" x2="846" y2="341" stroke="#263244"/><line x1="506" y1="384" x2="846" y2="384" stroke="#263244"/>
-    <path d="M 506.0 384.0 L 536.9 371.8 L 567.8 383.1 L 598.7 381.7 L 629.6 379.5 L 660.5 382.4 L 691.5 382.9 L 722.4 374.3 L 753.3 384.0 L 784.2 384.0 L 815.1 314.7 L 846.0 298.0 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
-    <path d="M 506.0 384.0 L 536.9 371.8 L 567.8 383.1 L 598.7 381.7 L 629.6 379.5 L 660.5 382.4 L 691.5 382.9 L 722.4 374.3 L 753.3 384.0 L 784.2 384.0 L 815.1 314.7 L 846.0 298.0" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak 5.3k</text>
+    <path d="M 506.0 384.0 L 536.9 370.6 L 567.8 383.0 L 598.7 381.4 L 629.6 379.1 L 660.5 382.2 L 691.5 382.8 L 722.4 373.4 L 753.3 383.9 L 784.2 384.0 L 815.1 307.6 L 846.0 298.0 L 846.0 384 L 506.0 384 Z" fill="url(#lineFill)"/>
+    <path d="M 506.0 384.0 L 536.9 370.6 L 567.8 383.0 L 598.7 381.4 L 629.6 379.1 L 660.5 382.2 L 691.5 382.8 L 722.4 373.4 L 753.3 383.9 L 784.2 384.0 L 815.1 307.6 L 846.0 298.0" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="506" y="397" class="axis">0</text><text x="846" y="397" class="axis" text-anchor="end">peak 4.8k</text>
     <text x="506.0" y="410" class="axis" text-anchor="middle">Dec</text>
     <text x="567.8" y="410" class="axis" text-anchor="middle">Feb</text>
     <text x="629.6" y="410" class="axis" text-anchor="middle">Apr</text>
@@ -95,14 +95,14 @@
   <text x="54" y="472" class="label">SOURCE LOC MIX</text>
   <text x="866" y="472" class="muted" text-anchor="end">Best months: 2026-11 commits, 2026-11 line changes</text>
   <g clip-path="url(#langClip)"><rect x="54" y="504" width="812" height="14" fill="#212b3a"/><rect x="54" y="504" width="229.0" height="14" fill="#58a6ff"/>
-    <rect x="283.0" y="504" width="189.2" height="14" fill="#3572a5"/>
-    <rect x="472.2" y="504" width="169.7" height="14" fill="#012456"/>
-    <rect x="641.9" y="504" width="100.7" height="14" fill="#e34c26"/>
-    <rect x="742.6" y="504" width="69.0" height="14" fill="#3178c6"/>
-    <rect x="811.6" y="504" width="54.39999999999998" height="14" fill="#94a3b8"/></g>
+    <rect x="283.0" y="504" width="190.0" height="14" fill="#3572a5"/>
+    <rect x="473.0" y="504" width="169.7" height="14" fill="#012456"/>
+    <rect x="642.7" y="504" width="100.7" height="14" fill="#e34c26"/>
+    <rect x="743.4000000000001" y="504" width="69.0" height="14" fill="#3178c6"/>
+    <rect x="812.4000000000001" y="504" width="53.59999999999991" height="14" fill="#94a3b8"/></g>
   <rect x="54" y="504" width="812" height="14" rx="7" stroke="#303c4d"/>
   <circle cx="62" cy="543" r="5.5" fill="#58a6ff"/><text x="76" y="548" class="legend">C#</text><text x="252" y="548" class="legendPct">28.2%</text>
-  <circle cx="332" cy="543" r="5.5" fill="#3572a5"/><text x="346" y="548" class="legend">Python</text><text x="522" y="548" class="legendPct">23.3%</text>
+  <circle cx="332" cy="543" r="5.5" fill="#3572a5"/><text x="346" y="548" class="legend">Python</text><text x="522" y="548" class="legendPct">23.4%</text>
   <circle cx="602" cy="543" r="5.5" fill="#012456"/><text x="616" y="548" class="legend">PowerShell</text><text x="792" y="548" class="legendPct">20.9%</text>
   <circle cx="62" cy="567" r="5.5" fill="#e34c26"/><text x="76" y="572" class="legend">HTML</text><text x="252" y="572" class="legendPct">12.4%</text>
   <circle cx="332" cy="567" r="5.5" fill="#3178c6"/><text x="346" y="572" class="legend">TypeScript</text><text x="522" y="572" class="legendPct">8.5%</text>
